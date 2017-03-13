@@ -1,0 +1,48 @@
+{
+  "name": "reactivestates",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "dependencies": {
+    "es6-shim": "0.35.1",
+    "rxjs": "5.0.1",
+    "snabbdom": "^0.6.4"
+  },
+  "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "lodash": "4.17.2",
+    "@types/lodash": "4.14.43",
+    "awesome-typescript-loader": "3.0.0-beta.13",
+    "chai": "^3.5.0",
+    "del": "latest",
+    "gulp": "latest",
+    "gulp-cached": "latest",
+    "gulp-run": "^1.7.1",
+    "gulp-sourcemaps": "latest",
+    "gulp-typescript": "latest",
+    "gulp-uglify": "latest",
+    "gulp-util": "latest",
+    "gulp-watch": "latest",
+    "jasmine-core": "^2.5.2",
+    "jquery": "^3.1.1",
+    "merge2": "latest",
+    "mocha": "^3.2.0",
+    "run-sequence": "latest",
+    "source-map-support": "^0.4.6",
+    "ts-node": "^1.7.2",
+    "typescript": "2.1.4",
+    "typings": "2.0.0",
+    "webpack": "^1.14.0",
+    "webpack-dev-server": "^1.16.2"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "scripts": {
+    "postinstall": "typings install",
+    "watch": "gulp watch",
+    "dist": "gulp dist",
+    "mocha": "./node_modules/.bin/mocha --opts spec/mocha.opts dist/",
+    "mocha-watch": "./node_modules/.bin/mocha -w --opts spec/mocha.opts dist/",
+    "demos-plain": "webpack-dev-server --config demos/plain/webpack.config.js"
+  }
+}
