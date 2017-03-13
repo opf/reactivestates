@@ -1,7 +1,10 @@
 {
-  "name": "reactivestates",
-  "version": "0.0.1",
+  "name": "reactivecomponents",
+  "version": "0.1.0",
   "main": "dist/index.js",
+  "directories": {
+    "lib": "dist"
+  },
   "dependencies": {
     "es6-shim": "0.35.1",
     "rxjs": "5.0.1",
