@@ -26,11 +26,46 @@ describe("StateMap", function () {
     });
 
     it("removing a states also disconnects it", function () {
-        const s = stateMap(() => state<string>());
-        s.get("a").putValue("a");
-        assert.isTrue(s.isConnected());
-        s.remove("a");
-        assert.isFalse(s.isConnected());
+        const sm = stateMap(() => state<string>());
+        const stateA = sm.get("a");
+        stateA.putValue("a");
+        assert.isTrue(stateA.isConnected());
+        sm.remove("a");
+        assert.isFalse(stateA.isConnected());
+    });
+
+    it("change events can be observed", function (done) {
+        const sm = stateMap(() => state<string>());
+
+        let callCount = 0;
+        sm.observeChange().subscribe(([key, val, state]) => {
+            if (callCount === 0) {
+                assert.isUndefined(val);
+            } else {
+                assert.equal(key, "a");
+                assert.equal(val, "a");
+                assert.equal(state.val, "a");
+                done();
+            }
+            callCount++;
+        });
+
+        sm.get("a").putValue("a");
+    });
+
+    it("remove events can be observed", function (done) {
+        const sm = stateMap(() => state<string>());
+        sm.get("a").putValue("a");
+
+        sm.observeRemove()
+                .filter(val => val === "a")
+                .subscribe(key => {
+                    assert.equal(key, "a");
+                    done();
+                });
+
+        sm.remove("a");
+
     });
 
 });

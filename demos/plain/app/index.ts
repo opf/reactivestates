@@ -4,6 +4,7 @@ import {createNewContext} from "../../../src/Context";
 import {ViewComponent, bootstrapView} from "../../../src/ViewComponent";
 import {dependent} from "../../../src/DependentState";
 import {state} from "../../../src/InputState";
+import {combine} from "../../../src/Combiner";
 
 
 const h = snabbdom.h;
