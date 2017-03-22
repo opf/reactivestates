@@ -39,13 +39,34 @@ describe("Component", function () {
 
         const ctx = createNewContext();
         const comp = ctx.create(Comp);
-        comp.changed$.subscribe(s => {
+        comp.changed$.subscribe(([name, s]) => {
             assert.equal(s, comp.s1);
             assert.equal(comp.s1.val, "a");
             done();
         });
 
         comp.s1.putValue("a");
+    });
+
+    it("can use nested objects to structure states", function (done) {
+        class Comp extends Component {
+            nestedA = {
+                nestedB: {
+                    s1: state<string>()
+                }
+            };
+        }
+
+        const ctx = createNewContext();
+        const comp = ctx.create(Comp);
+        comp.changed$.subscribe(([name, s]) => {
+            assert.isTrue(name.indexOf(".nestedA.nestedB.s1") !== -1);
+            assert.equal(s, comp.nestedA.nestedB.s1);
+            assert.equal(comp.nestedA.nestedB.s1.val, "a");
+            done();
+        });
+
+        comp.nestedA.nestedB.s1.putValue("a");
     });
 
 });

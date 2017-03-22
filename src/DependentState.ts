@@ -1,6 +1,5 @@
 import {Observable, Subscription, ReplaySubject} from "rxjs";
-import {State} from "./Component";
-
+import {State} from "./State";
 
 export class DependentState<T> extends State<T> {
 

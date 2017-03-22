@@ -1,9 +1,16 @@
-import {State} from "./Component";
 import {Subject} from "rxjs";
+import {State} from "./State";
 
 export interface Context {
-    changed$: Subject<State<any>>;
+    changed$: Subject<[string, State<any>]>;
     create: typeof create;
+}
+
+class ContextImpl implements Context {
+
+    changed$ = new Subject<[string, State<any>]>();
+    create = create;
+
 }
 
 export interface Injectable {
@@ -21,10 +28,7 @@ export function create<T extends Injectable>(this: Context, Class: {new(context:
 }
 
 export function createNewContext(): Context {
-    return {
-        changed$: new Subject<State<any>>(),
-        create: create
-    };
+    return new ContextImpl();
 }
 
 export function createChildContext(parent: Context): Context {

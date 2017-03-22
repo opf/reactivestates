@@ -1,6 +1,6 @@
 import {InputState} from "./InputState";
-import {State} from "./Component";
 import {Observable, Subject} from "rxjs";
+import {State} from "./State";
 
 export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: S}> {
 

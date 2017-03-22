@@ -1,37 +1,26 @@
 import {Observable} from "rxjs";
+import * as _ from "lodash";
 import {Context, createChildContext, Injectable} from "./Context";
+import {State} from "./State";
 
-export abstract class State<T> {
-
-    public abstract connect(): this;
-
-    public abstract disconnect(): this;
-
-    public abstract isConnected(): boolean;
-
-    public abstract observeAll(): Observable<T|undefined>;
-
-    public abstract observeValues(): Observable<T>;
-
-    public abstract observeNonValues(): Observable<T|undefined>;
-
-    stateSetWrapper = (fn: () => any) => {
-        fn();
-    };
-
-}
 
 export class Component implements Injectable {
 
     protected static nextStoreId = 0;
 
+    loggingFn = (msg: string) => {
+        console.error(msg);
+    };
+
     readonly storeId = Component.nextStoreId++;
 
-    readonly changed$: Observable<State<any>>;
+    readonly changed$: Observable<[string, State<any>]>;
 
     protected context: Context;
 
     protected _revision = 0;
+
+    private callDepth = 1;
 
     constructor(parentContext: Context) {
         this.context = createChildContext(parentContext);
@@ -46,28 +35,40 @@ export class Component implements Injectable {
     }
 
     onInit() {
-        let callDepth = 1;
-        for (const propertyName in this) {
-            if (this.hasOwnProperty(propertyName)) {
-                const member = this[propertyName];
+        this.handleAndTraverseProperty("", this);
+        this._revision = 0;
+        return this;
+    }
+
+    private handleAndTraverseProperty(path: string, obj: any) {
+        for (const propertyName in obj) {
+            if (obj.hasOwnProperty(propertyName)) {
+                const member = obj[propertyName];
+
                 if (member instanceof State) {
+                    member.name = this.storeId + path + "." + propertyName;
 
                     member.stateSetWrapper = (fn: () => any) => {
-                        console.log(Array(callDepth).join("  ") + "[" + this.storeId + "-" + propertyName + "] changed");
-                        callDepth++;
+                        this.loggingFn(Array(this.callDepth).join("  ") + "[" + member.name + "] changed");
+
+                        this.callDepth++;
                         fn();
-                        callDepth--;
+                        this.callDepth--;
                     };
 
                     member.observeAll()
                             .subscribe(() => {
-                                this.context.changed$.next(member);
+                                this.context.changed$.next([this.storeId + path + "." + propertyName, member]);
                             });
                 }
+
+                else if (_.isPlainObject(member)) {
+                    this.handleAndTraverseProperty(path + "." + propertyName, member);
+                }
+
             }
         }
-        this._revision = 0;
-        return this;
+
     }
 
 }
