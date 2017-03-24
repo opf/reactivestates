@@ -1,12 +1,12 @@
-import {state} from "./InputState";
+import {input} from "./InputState";
 import {gateFor} from "./Gate";
 import {combine} from "./Combiner";
 
 describe("Gate", function () {
 
     it("does not pass input after creation", function () {
-        const input = state(1);
-        const gate = gateFor(input);
+        const i1 = input(1);
+        const gate = gateFor(i1);
 
         gate.forEach(() => {
             throw new Error();
@@ -14,8 +14,8 @@ describe("Gate", function () {
     });
 
     it("pass input after passOne()", function (done) {
-        const input = state(1);
-        const gate = gateFor(input);
+        const i1 = input(1);
+        const gate = gateFor(i1);
 
         gate.forEach(i => {
             assert.equal(i, 1);
@@ -26,8 +26,8 @@ describe("Gate", function () {
     });
 
     it("pass inputs on every passOne() call", function () {
-        const input = state(1);
-        const gate = gateFor(input);
+        const i1 = input(1);
+        const gate = gateFor(i1);
 
         const values: number[] = [];
         gate.forEach(i => {
@@ -35,29 +35,29 @@ describe("Gate", function () {
         });
 
         gate.passOne();
-        input.putValue(2);
+        i1.putValue(2);
         gate.passOne();
 
         assert.deepEqual(values, [1, 2]);
     });
 
     it("pass input after passOne() but not following values", function (done) {
-        const input = state(1);
-        const gate = gateFor(input);
+        const i1 = input(1);
+        const gate = gateFor(i1);
 
         gate.forEach(i => {
             assert.equal(i, 1);
         });
 
         gate.passOne();
-        input.putValue(2);
+        i1.putValue(2);
 
         done();
     });
 
     it("pass nonValue input with passOne", function (done) {
-        const input = state<number>();
-        const gate = gateFor(input);
+        const i1 = input<number>();
+        const gate = gateFor(i1);
 
         let counter = 0;
         gate.forEach(
@@ -78,8 +78,8 @@ describe("Gate", function () {
     });
 
     it("correctly passes nonValues and values", function () {
-        const input = state<number>();
-        const gate = gateFor(input);
+        const i1 = input<number>();
+        const gate = gateFor(i1);
 
         let values: number[] = [];
         gate.forEach(
@@ -91,13 +91,13 @@ describe("Gate", function () {
 
         gate.passOne();
         gate.passOne();
-        input.putValue(1);
+        i1.putValue(1);
         gate.passOne();
         gate.passOne();
-        input.putValue(2);
+        i1.putValue(2);
         gate.passOne();
         gate.passOne();
-        input.clear();
+        i1.clear();
         gate.passOne();
         gate.passOne();
 
@@ -105,10 +105,10 @@ describe("Gate", function () {
     });
 
     it("correctly passes nonValues and values from a combined input", function () {
-        const input1 = state<number>();
-        const input2 = state<number>();
-        const input3 = state<number>();
-        const inputs = combine(input1, input2, input3);
+        const i1 = input<number>();
+        const i2 = input<number>();
+        const i3 = input<number>();
+        const inputs = combine(i1, i2, i3);
         const gate = gateFor(inputs);
 
         let values: [boolean, any][] = [];
@@ -120,13 +120,13 @@ describe("Gate", function () {
                 });
 
         gate.passOne();
-        input1.putValue(1);
+        i1.putValue(1);
         gate.passOne();
-        input2.putValue(2);
+        i2.putValue(2);
         gate.passOne();
-        input3.putValue(3);
+        i3.putValue(3);
         gate.passOne();
-        input2.clear();
+        i2.clear();
         gate.passOne();
 
         assert.deepEqual(

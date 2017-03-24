@@ -1,7 +1,10 @@
 import {Subject, Observable} from "rxjs";
 import {DependentState} from "./DependentState";
+import {observableToState, State} from "./State";
 
-export class InputState<T> extends DependentState<T> {
+export class InputState<T> extends State<T> {
+
+    // private readonly initialValue: T|undefined;
 
     private state: Subject<T>;
 
@@ -9,20 +12,31 @@ export class InputState<T> extends DependentState<T> {
 
     constructor(initialValue: T|undefined) {
         const state = new Subject<T>();
-        super(state.asObservable(), initialValue);
+        super(state, initialValue);
 
+        // this.initialValue = initialValue;
         this.stateValue = initialValue;
         this.state = state;
         this.timestampOfLastPromise = -1;
     }
+
+    // public connect(): this {
+    //     super.connect();
+        // if (this.initialValue !== undefined) {
+        //     this.putValue(this.initialValue);
+        // }
+        // return this;
+    // }
 
     putValue(val: T|undefined): this {
         this.state.next(val);
         return this;
     }
 
-    putFromPromise(promise: PromiseLike<T>): this {
-        this.clear();
+    clearAndPutFromPromise(promise: PromiseLike<T>): this {
+        if (this.hasValue()) {
+            this.clear();
+        }
         this.timestampOfLastPromise = Date.now();
         promise.then(
                 // success
@@ -54,7 +68,7 @@ export class InputState<T> extends DependentState<T> {
 
     putFromPromiseIfPristine(calledIfPristine: () => PromiseLike<T>): this {
         if (this.isPristine()) {
-            this.putFromPromise(calledIfPristine());
+            this.clearAndPutFromPromise(calledIfPristine());
         }
         return this;
     }
@@ -66,7 +80,7 @@ export class InputState<T> extends DependentState<T> {
 
     doModify(valueMapper: (val: T) => T|Observable<T>, or?: () => T|Observable<T>): this {
         if (this.hasValue()) {
-            this.observeValues().take(1).subscribe(oldVal => {
+            this.values$().take(1).subscribe(oldVal => {
                 let newInput = valueMapper(oldVal);
                 if (newInput instanceof Observable) {
                     newInput.take(1).subscribe(newVal => {
@@ -91,6 +105,6 @@ export class InputState<T> extends DependentState<T> {
 
 }
 
-export function state<T>(initValue: T|undefined = undefined) {
+export function input<T>(initValue: T|undefined = undefined) {
     return new InputState(initValue);
 }

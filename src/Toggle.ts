@@ -1,14 +1,14 @@
 import {Subject} from "rxjs";
-import {DependentState} from "./DependentState";
+import {State} from "./State";
 
-export class Toggle extends DependentState<boolean> {
+export class Toggle extends State<boolean> {
 
     private trigger$: Subject<boolean>;
     private state: boolean;
 
-    constructor(state = false) {
+    constructor(initialState: boolean) {
         let trigger = new Subject<boolean>();
-        super(trigger, state);
+        super(trigger, initialState);
         this.trigger$ = trigger;
     }
 

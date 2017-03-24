@@ -1,7 +1,7 @@
 import {Subject} from "rxjs";
-import {DependentState} from "./DependentState";
+import {State} from "./State";
 
-export class Trigger extends DependentState<boolean> {
+export class Trigger extends State<boolean> {
 
     private trigger$: Subject<boolean>;
 

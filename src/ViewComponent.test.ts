@@ -1,47 +1,51 @@
-import {Component} from "./Component";
-import {state} from "./InputState";
 import {createNewContext} from "./Context";
+import {input} from "./InputState";
+import {ViewComponent} from "./ViewComponent";
 
-describe("Component", function () {
+describe("ViewComponent", function () {
 
-    it("starts with revision 0, regardless of the number of states", function () {
-        class Comp extends Component {
+    it("starts with a revision count, that matches the number of states", function () {
+        class Comp extends ViewComponent {
             //noinspection JSUnusedGlobalSymbols
-            s1 = state<string>();
+            s1 = input<string>();
 
             //noinspection JSUnusedGlobalSymbols
-            s2 = state<string>();
+            s2 = input<string>();
         }
 
         const ctx = createNewContext();
         const comp = ctx.create(Comp);
-        assert.equal(comp.revision, 0);
-    });
-
-    it("changes its revision on state changes", function () {
-        class Comp extends Component {
-            s1 = state<string>();
-        }
-
-        const ctx = createNewContext();
-        const comp = ctx.create(Comp);
-        assert.equal(comp.revision, 0);
-        comp.s1.putValue("b");
-        assert.equal(comp.revision, 1);
-        comp.s1.putValue("c");
+        comp.enableLog(true);
         assert.equal(comp.revision, 2);
     });
 
+    it("changes its revision on state changes", function () {
+        class Comp extends ViewComponent {
+            s1 = input<string>();
+            s2 = input<string>();
+        }
+
+        const ctx = createNewContext();
+        const comp = ctx.create(Comp);
+        assert.equal(comp.revision, 2);
+        comp.s1.putValue("b");
+        assert.equal(comp.revision, 3);
+        comp.s1.putValue("c");
+        assert.equal(comp.revision, 4);
+        comp.s2.putValue("d");
+        assert.equal(comp.revision, 5);
+    });
+
     it("publishes state changes", function (done) {
-        class Comp extends Component {
-            s1 = state<string>();
+        class Comp extends ViewComponent {
+            s1 = input<string>();
         }
 
         const ctx = createNewContext();
         const comp = ctx.create(Comp);
         comp.changed$.subscribe(([name, s]) => {
             assert.equal(s, comp.s1);
-            assert.equal(comp.s1.val, "a");
+            assert.equal(comp.s1.value, "a");
             done();
         });
 
@@ -49,10 +53,10 @@ describe("Component", function () {
     });
 
     it("can use nested objects to structure states", function (done) {
-        class Comp extends Component {
+        class Comp extends ViewComponent {
             nestedA = {
                 nestedB: {
-                    s1: state<string>()
+                    s1: input<string>()
                 }
             };
         }
@@ -62,7 +66,7 @@ describe("Component", function () {
         comp.changed$.subscribe(([name, s]) => {
             assert.isTrue(name.indexOf(".nestedA.nestedB.s1") !== -1);
             assert.equal(s, comp.nestedA.nestedB.s1);
-            assert.equal(comp.nestedA.nestedB.s1.val, "a");
+            assert.equal(comp.nestedA.nestedB.s1.value, "a");
             done();
         });
 

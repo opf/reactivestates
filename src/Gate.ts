@@ -1,19 +1,19 @@
-import {Subject, Observable} from "rxjs";
-import {DependentState} from "./DependentState";
+import {Observable, Subject} from "rxjs";
+import {State} from "./State";
 
-export class Gate<T> extends DependentState<T> {
+export class Gate<T> extends State<T> {
 
     private trigger$: Subject<boolean>;
 
-    private input$: DependentState<T>;
+    private input$: State<T>;
 
     public readonly passOne: () => void;
 
-    constructor(input: DependentState<T>) {
+    constructor(input: State<T>) {
         const trigger = new Subject<boolean>();
 
         const stream: Observable<T> = trigger
-                .withLatestFrom(input.observeAll(), (t, i) => i);
+                .withLatestFrom(input.changes$(), (t, i) => i);
 
         super(stream);
         this.trigger$ = trigger;
@@ -27,7 +27,7 @@ export class Gate<T> extends DependentState<T> {
 
 }
 
-export function gateFor<T>(input: DependentState<T>): Gate<T> {
+export function gateFor<T>(input: State<T>): Gate<T> {
     return new Gate(input);
 }
 

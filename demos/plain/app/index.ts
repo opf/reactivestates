@@ -1,37 +1,46 @@
-import {Observable} from "rxjs";
+import {Observable, Observer} from "rxjs";
 import * as snabbdom from "snabbdom";
 import {createNewContext} from "../../../src/Context";
 import {ViewComponent, bootstrapView} from "../../../src/ViewComponent";
 import {dependent} from "../../../src/DependentState";
-import {state} from "../../../src/InputState";
+import {input} from "../../../src/InputState";
 import {combine} from "../../../src/Combiner";
 
 
 const h = snabbdom.h;
 
-class InnerStore extends ViewComponent {
+class InnerComponent extends ViewComponent {
 
-    now = state(Date.now());
+    now = input(Date.now());
 
     protected render() {
         console.log("  inner render()");
         return h("div", [
-            this.now.val,
+            this.now.value,
             h("button", {on: {click: () => this.now.putValue(Date.now())}}, "inc"),
         ]);
     }
 
 }
 
-class CounterStore extends ViewComponent {
+class CounterComponent extends ViewComponent {
 
-    counter = state(2);
+    name = "CounterComp";
 
-    counter2 = dependent(this.counter, $ => $.map(v => v + 1000));
+    counter = input(2);
 
-    invalidCounterErrorMsg = state<string>();
+    counter2 = dependent(this.counter, $ => $.flatMap(v => {
+        return Observable.create((obs: Observer<Number>) => {
+            setTimeout(() => {
+                obs.next(v + 1000);
+                obs.complete();
+            }, 1000);
+        });
+    }));
 
-    innerComponent = this.context.create(InnerStore);
+    invalidCounterErrorMsg = input<string>();
+
+    innerComponent = this.context.create(InnerComponent);
 
     changeCounter(offset: number) {
         this.counter.doModify(val => {
@@ -51,9 +60,9 @@ class CounterStore extends ViewComponent {
 
         return h('div.counter', [
             h("div", [
-                "Counter: ", h("span", {style: {fontWeight: 'bold'}}, this.counter.val.toString()),
+                "Counter: ", h("span", {style: {fontWeight: 'bold'}}, this.counter.valueString),
                 " ",
-                "Counter2: ", h("span", {style: {fontWeight: 'bold'}}, this.counter2.val.toString()),
+                "Counter2: ", h("span", {style: {fontWeight: 'bold'}}, this.counter2.valueString),
                 " ",
                 this.invalidCounterErrorMsg.hasValue() ? h("span", "error") : null,
             ]),
@@ -70,7 +79,8 @@ class CounterStore extends ViewComponent {
 
 const container = document.getElementById("container");
 const ctx = createNewContext();
-bootstrapView(container!, ctx, CounterStore);
+let root = bootstrapView(container!, ctx, CounterComponent);
+root.enableLog(true);
 
 
 //////////////////////

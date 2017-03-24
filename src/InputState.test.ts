@@ -1,10 +1,10 @@
-import {state} from "./InputState";
+import {input} from "./InputState";
 import {Observable} from "rxjs";
 
 describe("InputState", function () {
 
     it("is empty after creation", function () {
-        const s1 = state();
+        const s1 = input();
         assert.isFalse(s1.hasValue());
 
         s1.forEach(() => {
@@ -13,8 +13,8 @@ describe("InputState", function () {
     });
 
     it("can have an initial value", function (done) {
-        const s1 = state(5);
-        s1.observeAll().subscribe(i => {
+        const s1 = input(5);
+        s1.changes$().subscribe(i => {
             assert.equal(i, 5);
             done();
         });
@@ -22,8 +22,8 @@ describe("InputState", function () {
 
     it("replays the initial value on every connect", function () {
         const values: any[] = [];
-        const s1 = state(5);
-        s1.observeAll().subscribe(i => {
+        const s1 = input(5);
+        s1.changes$().subscribe(i => {
             values.push(i);
         });
 
@@ -32,59 +32,59 @@ describe("InputState", function () {
         s1.disconnect();
         s1.connect();
 
-        assert.deepEqual(values, [5, 5, 5]);
+        assert.deepEqual(values, [5, undefined, 5, undefined, 5]);
     });
 
     it("broadcasts value", function (done) {
-        const s1 = state<number>();
+        const s1 = input<number>();
         s1.putValue(1);
-        s1.observeAll().subscribe(i => {
+        s1.changes$().subscribe(i => {
             assert.equal(i, 1);
             done();
         })
     });
 
     it("can be cleared", function () {
-        const s1 = state(5);
+        const s1 = input(5);
         s1.clear();
-        s1.observeValues().subscribe(() => {
+        s1.values$().subscribe(() => {
             throw new Error("state should be cleared");
         });
     });
 
     it("can modify the state from a value", function (done) {
-        const s1 = state(5);
+        const s1 = input(5);
         s1.doModify(val => val + 1);
-        s1.observeValues().subscribe(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 6);
             done();
         });
     });
 
     it("can modify the state from Observable", function (done) {
-        const s1 = state(5);
+        const s1 = input(5);
         s1.doModify(val => Observable.of(val + 1));
-        s1.observeValues().subscribe(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 6);
             done();
         });
     });
 
     it("can modify the state if it has a nonValue", function (done) {
-        const s1 = state();
+        const s1 = input();
 
         s1.doModify(() => {
             throw new Error("must not be called");
         }, () => 9);
 
-        s1.observeValues().subscribe(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 9);
             done();
         });
     });
 
     it("calls doOnValue with inital value of 0", function (done) {
-        const s1 = state(0);
+        const s1 = input(0);
         s1.forEach(val => {
             assert.equal(val, 0);
             done();
@@ -92,8 +92,8 @@ describe("InputState", function () {
     });
 
     it("putFromPromise", function (done) {
-        const s1 = state(0);
-        s1.putFromPromise(Observable.timer(0).take(1).toPromise());
+        const s1 = input(0);
+        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
         assert.isFalse(s1.hasValue());
         s1.forEach(val => {
             assert.equal(val, 0);
@@ -103,8 +103,8 @@ describe("InputState", function () {
     });
 
     it("hasActivePromiseRequest", function (done) {
-        const s1 = state(0);
-        s1.putFromPromise(Observable.timer(0).take(1).toPromise());
+        const s1 = input(0);
+        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
         assert.isFalse(s1.hasValue());
         assert.isTrue(s1.hasActivePromiseRequest());
 
@@ -117,15 +117,15 @@ describe("InputState", function () {
     });
 
     it("isPristine", function () {
-        const s1 = state<number>();
+        const s1 = input<number>();
         assert.isTrue(s1.isPristine());
-        s1.putFromPromise(Observable.timer(0).take(1).toPromise());
+        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
         assert.isFalse(s1.isPristine());
         assert.isFalse(s1.hasValue());
     });
 
     it("putFromPromiseIfPristine", function (done) {
-        const s1 = state<number>();
+        const s1 = input<number>();
 
         s1.putFromPromiseIfPristine(() => Observable.timer(0).take(1).toPromise());
         assert.isTrue(s1.hasActivePromiseRequest());

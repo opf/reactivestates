@@ -1,10 +1,10 @@
-import {InputState} from "./InputState";
 import {Observable, Subject} from "rxjs";
+import {input, InputState} from "./InputState";
 import {State} from "./State";
 
-export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: S}> {
+export class StateCache<T, S extends State<T>> extends InputState<{ [key: string]: S }> {
 
-    private readonly change$ = new Subject<[string, T|undefined, S]>();
+    private readonly change$ = new Subject<[string, T | undefined, S]>();
 
     private readonly remove$ = new Subject<string>();
 
@@ -13,9 +13,11 @@ export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: 
     }
 
     clear(): this {
-        for (let id in this.val) {
-            const state = this.val[id];
-            state.disconnect();
+        if (this.hasValue()) {
+            for (let id in this.value!) {
+                const state = this.value![id];
+                state.disconnect();
+            }
         }
 
         this.putValue({});
@@ -27,7 +29,7 @@ export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: 
             if (map[id] == undefined) {
                 const newState = this.stateFactory();
                 map[id] = newState;
-                newState.observeAll()
+                newState.changes$()
                         .takeUntil(this.observeRemove().filter(val => val === id))
                         .subscribe(val => {
                             this.change$.next([id, val, newState]);
@@ -36,7 +38,7 @@ export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: 
             return map;
         });
 
-        return this.val[id];
+        return this.value![id];
     }
 
     remove(id: string): S {
@@ -48,10 +50,10 @@ export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: 
             return map;
         });
 
-        return this.val[id];
+        return this.value![id];
     }
 
-    observeChange(): Observable<[string, T|undefined, S]> {
+    observeChange(): Observable<[string, T | undefined, S]> {
         return this.change$.asObservable();
     }
 
@@ -61,6 +63,10 @@ export class StateMap<T, S extends State<T>> extends InputState<{[key: string]: 
 
 }
 
-export function stateMap<T, S extends State<T>>(stateFactory: () => S) {
-    return new StateMap(stateFactory);
+export function stateCache<T, S extends State<T>>(stateFactory: () => S) {
+    return new StateCache(stateFactory);
+}
+
+export function inputStateCache<T, S extends State<T>>() {
+    return new StateCache(() => input<string>());
 }
