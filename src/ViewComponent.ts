@@ -29,7 +29,7 @@ export function bootstrapView<T extends ViewComponent>(element: Element,
         if (!updateRequested) {
             updateRequested = true;
             setTimeout(() => {
-                console.log("renderView()");
+                // console.log("renderView()");
                 vnode = patch(vnode, component.getThunk());
                 updateRequested = false;
             }, 0);

@@ -9,14 +9,14 @@ describe("StateCache", function () {
     });
 
     it("fills previously requested states", function () {
-        const s = inputStateCache();
+        const s = inputStateCache<string>();
         let stateA = s.get("a");
         const calls: any[] = [];
         stateA.changes$().subscribe(val => {
             calls.push(val);
         });
         stateA.putValue("a");
-        assert.deepEqual(calls, [undefined, "a"])
+        assert.deepEqual(calls, [undefined, "a"]);
     });
 
     it("can remove entries", function () {

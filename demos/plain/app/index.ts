@@ -1,10 +1,12 @@
 import {Observable, Observer} from "rxjs";
 import * as snabbdom from "snabbdom";
+import {combine} from "../../../src/Combiner";
 import {createNewContext} from "../../../src/Context";
-import {ViewComponent, bootstrapView} from "../../../src/ViewComponent";
 import {dependent} from "../../../src/DependentState";
 import {input} from "../../../src/InputState";
-import {combine} from "../../../src/Combiner";
+import {bootstrapView, ViewComponent} from "../../../src/ViewComponent";
+import {trigger} from "../../../src/Trigger";
+import {gateFor} from "../../../src/Gate";
 
 
 const h = snabbdom.h;
@@ -14,7 +16,7 @@ class InnerComponent extends ViewComponent {
     now = input(Date.now());
 
     protected render() {
-        console.log("  inner render()");
+        // console.log("  inner render()");
         return h("div", [
             this.now.value,
             h("button", {on: {click: () => this.now.putValue(Date.now())}}, "inc"),
@@ -27,36 +29,38 @@ class CounterComponent extends ViewComponent {
 
     name = "CounterComp";
 
-    counter = input(2);
+    counterIn = input(0);
 
-    counter2 = dependent(this.counter, $ => $.flatMap(v => {
-        return Observable.create((obs: Observer<Number>) => {
-            setTimeout(() => {
-                obs.next(v + 1000);
-                obs.complete();
-            }, 1000);
-        });
-    }));
+    counterIsValid = dependent(this.counterIn, $ =>
+            $.map(v => v >= 0));
 
-    invalidCounterErrorMsg = input<string>();
+    counter = dependent(combine(this.counterIsValid, this.counterIn), $ => $
+            .filter(([valid]) => valid)
+            .map(([valid, counter]) => counter));
+
+    doLoad = gateFor(this.counter);
+
+    counter2 = dependent(this.doLoad, $ =>
+            $.switchMap(v => {
+                return Observable.create((obs: Observer<Number>) => {
+                    setTimeout(() => {
+                        obs.next(v + 1000);
+                        obs.complete();
+                    }, 1000);
+                });
+            }));
 
     innerComponent = this.context.create(InnerComponent);
 
+
+
     changeCounter(offset: number) {
-        this.counter.doModify(val => {
-            const newVal = val + offset;
-            if (newVal >= 0) {
-                this.invalidCounterErrorMsg.clear();
-                return newVal;
-            } else {
-                this.invalidCounterErrorMsg.putValue("invalid: " + newVal);
-                return Observable.never();
-            }
-        });
+        const current = this.counter.getValueOr(0);
+        this.counterIn.putValue(current + offset);
     }
 
     render() {
-        console.log("  outer render()");
+        // console.log("  outer render()");
 
         return h('div.counter', [
             h("div", [
@@ -64,7 +68,7 @@ class CounterComponent extends ViewComponent {
                 " ",
                 "Counter2: ", h("span", {style: {fontWeight: 'bold'}}, this.counter2.valueString),
                 " ",
-                this.invalidCounterErrorMsg.hasValue() ? h("span", "error") : null,
+                this.counterIsValid.value ? h("span") : h("span", "invalid"),
             ]),
             h("div", [
                 h("button", {on: {click: () => this.changeCounter(-1)}}, "-1"),
@@ -81,51 +85,3 @@ const container = document.getElementById("container");
 const ctx = createNewContext();
 let root = bootstrapView(container!, ctx, CounterComponent);
 root.enableLog(true);
-
-
-//////////////////////
-// console.log("----------------------------------------------------------------");
-//
-// type Partial<T> = { [P in keyof T]?: T[P]; };
-// type Proxy<T> = Partial<T> & {target: T};
-//
-// function createProxy<A, B extends Proxy<A>>(target: A, proxy: B): A {
-//     proxy.target = target;
-//     (proxy as any).__proto__.__proto__ = target;
-//     return proxy as any;
-// }
-//
-//
-// class Service {
-//     methodA() {
-//         console.log("a");
-//     }
-//
-//     methodB() {
-//         console.log("b");
-//     }
-//
-//     methodC() {
-//         console.log("c");
-//     }
-// }
-//
-// class MyProxy {
-//
-//     target: Service;
-//
-//     methodB() {
-//         console.log(">>>");
-//         this.target.methodB();
-//         console.log("<<<");
-//     }
-//
-// }
-//
-// const s = new Service();
-// const p = new MyProxy();
-//
-// const proxy = createProxy(s, p);
-// proxy.methodB();
-//
-// console.log("----------------------------------------------------------------");

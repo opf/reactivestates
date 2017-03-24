@@ -91,6 +91,10 @@ export class State<T> {
         return this.stateValue!;
     }
 
+    public getValueOr<B>(or: B): T | B {
+        return this.hasValue() ? this.value! : or;
+    }
+
     public get valueString(): string {
         return this.hasValue() ? this.value!.toString() : "";
     }

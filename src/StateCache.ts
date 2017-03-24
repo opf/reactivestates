@@ -67,6 +67,6 @@ export function stateCache<T, S extends State<T>>(stateFactory: () => S) {
     return new StateCache(stateFactory);
 }
 
-export function inputStateCache<T, S extends State<T>>() {
-    return new StateCache(() => input<string>());
+export function inputStateCache<T>() {
+    return new StateCache(() => input<T>());
 }
