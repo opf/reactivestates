@@ -1,6 +1,6 @@
 {
   "name": "reactivecomponents",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,7 @@
   "dependencies": {
     "es6-shim": "0.35.1",
     "lodash": "^4.17.2",
-    "rxjs": "5.0.1",
+    "rxjs": "5.x",
     "snabbdom": "^0.6.4"
   },
   "devDependencies": {
@@ -37,6 +37,9 @@
     "typings": "2.0.0",
     "webpack": "^1.14.0",
     "webpack-dev-server": "^1.16.2"
+  },
+  "peerDependencies": {
+    "rxjs": "5.x"
   },
   "engines": {
     "node": ">=0.8.0"
