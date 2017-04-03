@@ -1,6 +1,5 @@
-import {Subject, Observable} from "rxjs";
-import {DependentState} from "./DependentState";
-import {observableToState, State} from "./State";
+import {Observable, Subject} from "rxjs";
+import {State} from "./State";
 
 export class InputState<T> extends State<T> {
 

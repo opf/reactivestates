@@ -26,7 +26,7 @@ export class StateCache<T, S extends State<T>> extends InputState<{ [key: string
 
     get(id: string): S {
         this.doModify(map => {
-            if (map[id] == undefined) {
+            if (map[id] === undefined) {
                 const newState = this.stateFactory();
                 map[id] = newState;
                 newState.changes$()
@@ -63,10 +63,10 @@ export class StateCache<T, S extends State<T>> extends InputState<{ [key: string
 
 }
 
-export function stateCache<T, S extends State<T>>(stateFactory: () => S) {
+export function stateCache<T, S extends State<T>>(stateFactory: () => S): StateCache<T, S> {
     return new StateCache(stateFactory);
 }
 
-export function inputStateCache<T>() {
+export function inputStateCache<T>(): StateCache<T, InputState<T>> {
     return new StateCache(() => input<T>());
 }
