@@ -50,7 +50,7 @@ export class State<T> {
     }
 
     public isConnected(): boolean {
-        return this.sourceSubscription != undefined;
+        return this.sourceSubscription !== undefined;
     }
 
     public isValueOlderThan(timeoutInMs: number): boolean {

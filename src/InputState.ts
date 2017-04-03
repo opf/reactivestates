@@ -3,8 +3,6 @@ import {State} from "./State";
 
 export class InputState<T> extends State<T> {
 
-    // private readonly initialValue: T|undefined;
-
     private state: Subject<T>;
 
     private timestampOfLastPromise: number;
@@ -13,19 +11,10 @@ export class InputState<T> extends State<T> {
         const state = new Subject<T>();
         super(state, initialValue);
 
-        // this.initialValue = initialValue;
         this.stateValue = initialValue;
         this.state = state;
         this.timestampOfLastPromise = -1;
     }
-
-    // public connect(): this {
-    //     super.connect();
-        // if (this.initialValue !== undefined) {
-        //     this.putValue(this.initialValue);
-        // }
-        // return this;
-    // }
 
     putValue(val: T|undefined): this {
         this.state.next(val);

@@ -8,4 +8,5 @@ export * from "./StateCache";
 export * from "./Toggle";
 export * from "./Trigger";
 export * from "./ViewComponent";
+export * from "./State";
 
