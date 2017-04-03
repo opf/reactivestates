@@ -1,6 +1,6 @@
 {
-  "name": "reactivecomponents",
-  "version": "0.4.2",
+  "name": "reactivestates",
+  "version": "0.4.4",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -33,6 +33,7 @@
     "run-sequence": "latest",
     "source-map-support": "^0.4.6",
     "ts-node": "^1.7.2",
+    "tslint": "^5.0.0",
     "typescript": "2.1.4",
     "typings": "2.0.0",
     "webpack": "^1.14.0",
