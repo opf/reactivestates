@@ -15,7 +15,7 @@ describe("Combiner", function () {
                 .subscribe(i => {
                     assert.deepEqual(i, [undefined, undefined]);
                     done();
-                })
+                });
     });
 
     it("observeNonValues has '[undefined, undefined]' state after creation", function (done) {
@@ -29,7 +29,7 @@ describe("Combiner", function () {
                 .subscribe(i => {
                     assert.deepEqual(i, [undefined, undefined]);
                     done();
-                })
+                });
     });
 
     it("observeNonValues emits values while no all input states have a value", function (done) {
