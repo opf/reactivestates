@@ -5,7 +5,6 @@ import {createNewContext} from "../../../src/Context";
 import {dependent} from "../../../src/DependentState";
 import {input} from "../../../src/InputState";
 import {bootstrapView, ViewComponent} from "../../../src/ViewComponent";
-import {trigger} from "../../../src/Trigger";
 import {gateFor} from "../../../src/Gate";
 
 
@@ -51,7 +50,6 @@ class CounterComponent extends ViewComponent {
             }));
 
     innerComponent = this.context.create(InnerComponent);
-
 
 
     changeCounter(offset: number) {
