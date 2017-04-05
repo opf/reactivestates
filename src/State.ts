@@ -75,12 +75,24 @@ export class State<T> {
         return this.wrapObserve(this.innerStream.asObservable(), reason);
     }
 
+    public changesPromise(): PromiseLike<T | undefined> {
+        return this.changes$().take(1).toPromise();
+    }
+
     public values$(reason?: string): Observable<T> {
         return this.wrapObserve(this.value$, reason);
     }
 
+    public valuesPromise(): PromiseLike<T | undefined> {
+        return this.values$().take(1).toPromise();
+    }
+
     public nonValues$(reason?: string): Observable<T | undefined> {
         return this.wrapObserve(this.nonValue$, reason);
+    }
+
+    public nonValuesPromise(): PromiseLike<T | undefined> {
+        return this.nonValues$().take(1).toPromise();
     }
 
     public isNonValue(val: T | undefined): boolean {
