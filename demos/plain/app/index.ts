@@ -7,7 +7,6 @@ import {input} from "../../../src/InputState";
 import {bootstrapView, ViewComponent} from "../../../src/ViewComponent";
 import {gateFor} from "../../../src/Gate";
 
-
 const h = snabbdom.h;
 
 class InnerComponent extends ViewComponent {
@@ -60,11 +59,11 @@ class CounterComponent extends ViewComponent {
     render() {
         // console.log("  outer render()");
 
-        return h('div.counter', [
+        return h("div.counter", [
             h("div", [
-                "Counter: ", h("span", {style: {fontWeight: 'bold'}}, this.counter.valueString),
+                "Counter: ", h("span", {style: {fontWeight: "bold"}}, this.counter.valueString),
                 " ",
-                "Counter2: ", h("span", {style: {fontWeight: 'bold'}}, this.counter2.valueString),
+                "Counter2: ", h("span", {style: {fontWeight: "bold"}}, this.counter2.valueString),
                 " ",
                 this.counterIsValid.value ? h("span") : h("span", "invalid"),
             ]),
