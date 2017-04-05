@@ -16,7 +16,8 @@ export class InputState<T> extends State<T> {
         this.timestampOfLastPromise = -1;
     }
 
-    putValue(val: T|undefined): this {
+    putValue(val: T|undefined, reason?: string): this {
+        reason && this.log(reason);
         this.state.next(val);
         return this;
     }
