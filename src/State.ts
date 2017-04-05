@@ -118,13 +118,17 @@ export class State<T> {
             stringify = stringify.length > 50 ? stringify.substr(0, 50) + "..." : stringify;
         }
 
-        console.log("[" + this.name + "] = " + stringify);
+        this.log("= " + stringify);
+    }
+
+    protected log(message: string) {
+        console.log("[" + this.name + "] " + message);
     }
 
     private wrapObserve($: Observable<T>, reason?: string): Observable<T> {
         return reason === undefined || !this.logEnabled
                 ? $
-                : $.do(() => console.log("    -> " + reason));
+                : $.do(() => this.log("-> " + reason));
     }
 
     private setInnerValue(val: T | undefined): void {

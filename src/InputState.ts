@@ -61,7 +61,7 @@ export class InputState<T> extends State<T> {
         return this;
     }
 
-    clear(): this {
+    clear(reason?: string): this {
         this.putValue(undefined);
         return this;
     }
