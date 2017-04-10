@@ -102,6 +102,14 @@ describe("State", function () {
         }, 5);
     });
 
+    it("fires correctly when using valuesPromise", function (done) {
+        const dummy = new Subject<number>();
+        const s1 = observableToState(dummy);
+        dummy.next(1);
+
+        s1.valuesPromise().then(() => done());
+    });
+
     it("value / nonValue states over time", function () {
         const value = new Subject<number>();
         const s1 = observableToState(value);
