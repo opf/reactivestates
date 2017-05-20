@@ -1,35 +1,38 @@
 import {Observable, ReplaySubject, Subscription} from "rxjs";
+import {Observer} from "rxjs/Observer";
 
 let unnamedStateCounter = 0;
 
 export class State<T> {
 
-    public name = "unnamed-" + unnamedStateCounter++;
+    public name = "unnamed-state-" + unnamedStateCounter++;
 
     public logEnabled = false;
 
     protected stateValue: T | undefined;
 
+    private inputStream: Observable<T | undefined>;
+
     private sourceSubscription: Subscription | undefined;
+
+    private observerCount = 0;
 
     private timestampOfLastValue = -1;
 
-    private source$: Observable<T | undefined>;
+    private outputStream = new ReplaySubject<T | undefined>(1);
 
-    private innerStream = new ReplaySubject<T | undefined>(1);
+    private value$ = this.outputStream.filter(v => !this.isNonValue(v));
 
-    private value$ = this.innerStream.filter(v => !this.isNonValue(v));
-
-    private nonValue$ = this.innerStream.filter(v => this.isNonValue(v));
+    private nonValue$ = this.outputStream.filter(v => this.isNonValue(v));
 
     constructor(source$: Observable<T | undefined>, private initialValue?: T | undefined) {
-        this.source$ = source$;
+        this.inputStream = source$;
         this.connect();
     }
 
     public connect(): this {
         this.disconnect();
-        this.sourceSubscription = this.source$
+        this.sourceSubscription = this.inputStream
                 .startWith(this.initialValue)
                 .map(val => {
                     this.setInnerValue(val);
@@ -65,14 +68,8 @@ export class State<T> {
         return !this.isNonValue(this.stateValue);
     }
 
-    public forEach(valuesSink: (val: T) => any, nonValuesSink?: (val: T) => any): this {
-        this.values$().subscribe(valuesSink);
-        this.nonValues$().subscribe(nonValuesSink);
-        return this;
-    }
-
     public changes$(reason?: string): Observable<T | undefined> {
-        return this.wrapObserve(this.innerStream.asObservable(), reason);
+        return this.wrapObserve(this.outputStream.asObservable(), reason);
     }
 
     public changesPromise(): PromiseLike<T | undefined> {
@@ -100,15 +97,25 @@ export class State<T> {
     }
 
     public get value(): T | undefined {
-        return this.stateValue!;
+        return this.stateValue;
     }
 
     public getValueOr<B>(or: B): T | B {
         return this.hasValue() ? this.value! : or;
     }
 
-    public get valueString(): string {
+    public get text(): string {
         return this.hasValue() ? this.value!.toString() : "";
+    }
+
+    public getObserverCount() {
+        return this.observerCount;
+    }
+
+    protected onObserverSubscribed(): void {
+    }
+
+    protected onObserverUnsubscribed(): void {
     }
 
     protected logNewState(value: T | undefined) {
@@ -126,9 +133,27 @@ export class State<T> {
     }
 
     private wrapObserve($: Observable<T>, reason?: string): Observable<T> {
-        return reason === undefined || !this.logEnabled
-                ? $
-                : $.do(() => this.log("-> " + reason));
+        return Observable.create((subscriber: Observer<T>) => {
+            this.observerCount++;
+            this.onObserverSubscribed();
+            $.subscribe(
+                    val => {
+                        if (reason !== undefined) {
+                            this.log("-> " + reason);
+                        }
+                        subscriber.next(val);
+                    }, error => {
+                        subscriber.error(error);
+                    }, () => {
+                        subscriber.complete();
+                    }
+            );
+
+            return () => {
+                this.observerCount--;
+                this.onObserverUnsubscribed();
+            };
+        });
     }
 
     private setInnerValue(val: T | undefined): void {
@@ -143,7 +168,7 @@ export class State<T> {
             this.timestampOfLastValue = -1;
         }
 
-        this.innerStream.next(val);
+        this.outputStream.next(val);
     }
 
 }
@@ -151,3 +176,4 @@ export class State<T> {
 export function observableToState<T>(input$: Observable<T | undefined>): State<T> {
     return new State(input$);
 }
+

@@ -1,4 +1,3 @@
-import {DependentState} from "./DependentState";
 import {Observable} from "rxjs";
 import {State} from "./State";
 
@@ -47,7 +46,7 @@ export function combine<T1, T2, T3, T4, T5, T6>(state1: State<T1>,
                                                 state5: State<T5>,
                                                 state6: State<T6>): CombinerState<[T1, T2, T3, T4, T5, T6]>;
 
-export function combine(...states: DependentState<any, any>[]): CombinerState<any> {
+export function combine(...states: State<any>[]): CombinerState<any> {
     return new CombinerState<any>(Observable.combineLatest(
             states.map(o => o.changes$()),
             (...args: any[]) => args

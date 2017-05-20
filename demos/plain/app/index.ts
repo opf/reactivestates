@@ -2,10 +2,10 @@ import {Observable, Observer} from "rxjs";
 import * as snabbdom from "snabbdom";
 import {combine} from "../../../src/Combiner";
 import {createNewContext} from "../../../src/Context";
-import {dependent} from "../../../src/DependentState";
+import {derive, deriveRaw} from "../../../src/DerivedState";
 import {input} from "../../../src/InputState";
-import {bootstrapView, ViewComponent} from "../../../src/ViewComponent";
 import {gateFor} from "../../../src/Gate";
+import {bootstrapView, ViewComponent} from "../../../src/ViewComponent";
 
 const h = snabbdom.h;
 
@@ -29,16 +29,16 @@ class CounterComponent extends ViewComponent {
 
     counterIn = input(0);
 
-    counterIsValid = dependent(this.counterIn, $ =>
+    counterIsValid = deriveRaw(this.counterIn, $ =>
             $.map(v => v >= 0));
 
-    counter = dependent(combine(this.counterIsValid, this.counterIn), $ => $
+    counter = derive(combine(this.counterIsValid, this.counterIn), $ => $
             .filter(([valid]) => valid)
             .map(([valid, counter]) => counter));
 
     doLoad = gateFor(this.counter);
 
-    counter2 = dependent(this.doLoad, $ =>
+    counter2 = derive(this.doLoad, $ =>
             $.switchMap(v => {
                 return Observable.create((obs: Observer<Number>) => {
                     setTimeout(() => {
@@ -61,9 +61,9 @@ class CounterComponent extends ViewComponent {
 
         return h("div.counter", [
             h("div", [
-                "Counter: ", h("span", {style: {fontWeight: "bold"}}, this.counter.valueString),
+                "Counter: ", h("span", {style: {fontWeight: "bold"}}, this.counter.text),
                 " ",
-                "Counter2: ", h("span", {style: {fontWeight: "bold"}}, this.counter2.valueString),
+                "Counter2: ", h("span", {style: {fontWeight: "bold"}}, this.counter2.text),
                 " ",
                 this.counterIsValid.value ? h("span") : h("span", "invalid"),
             ]),

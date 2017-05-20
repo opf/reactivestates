@@ -7,7 +7,7 @@ describe("InputState", function () {
         const s1 = input();
         assert.isFalse(s1.hasValue());
 
-        s1.forEach(() => {
+        s1.values$().subscribe(() => {
             throw new Error();
         })
     });
@@ -85,7 +85,7 @@ describe("InputState", function () {
 
     it("calls doOnValue with inital value of 0", function (done) {
         const s1 = input(0);
-        s1.forEach(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 0);
             done();
         })
@@ -95,7 +95,7 @@ describe("InputState", function () {
         const s1 = input(0);
         s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
         assert.isFalse(s1.hasValue());
-        s1.forEach(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 0);
             assert.isTrue(s1.hasValue());
             done();
@@ -108,7 +108,7 @@ describe("InputState", function () {
         assert.isFalse(s1.hasValue());
         assert.isTrue(s1.hasActivePromiseRequest());
 
-        s1.forEach(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 0);
             assert.isTrue(s1.hasValue());
             assert.isFalse(s1.hasActivePromiseRequest());
@@ -135,7 +135,7 @@ describe("InputState", function () {
             throw new Error("must not be called");
         });
 
-        s1.forEach(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 0);
             assert.isTrue(s1.hasValue());
             assert.isFalse(s1.hasActivePromiseRequest());

@@ -13,10 +13,10 @@ describe("State", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         dummy.next(1);
-        s1.forEach(val => {
+        s1.values$().subscribe(val => {
             assert.equal(val, 1);
             done();
-        })
+        });
     });
 
     it("observeAll has 'undefined' state after creation", function (done) {
@@ -108,6 +108,20 @@ describe("State", function () {
         dummy.next(1);
 
         s1.valuesPromise().then(() => done());
+    });
+
+    it("counts the number of observers", function () {
+        const dummy = new Subject<number>();
+        const s1 = observableToState(dummy);
+        assert.equal(s1.getObserverCount(), 0);
+        const sub1 = s1.values$().subscribe(v => v);
+        assert.equal(s1.getObserverCount(), 1);
+        const sub2 = s1.values$().subscribe(v => v);
+        assert.equal(s1.getObserverCount(), 2);
+        sub1.unsubscribe();
+        assert.equal(s1.getObserverCount(), 1);
+        sub2.unsubscribe();
+        assert.equal(s1.getObserverCount(), 0);
     });
 
     it("value / nonValue states over time", function () {
