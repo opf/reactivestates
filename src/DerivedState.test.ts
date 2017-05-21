@@ -141,11 +141,10 @@ describe("DerivedState", function () {
         assert.deepEqual(calls, [1, 2, 3]);
     });
 
-    it("can have a default value", function () {
+    it("can have an initial value", function () {
         const calls: any[] = [];
         const input$ = input<number>();
         const derived$ = derive(input$, $ => $, 1);
-        derived$.logEnabled = true;
         derived$.changes$().subscribe(v => calls.push(v));
         input$.putValue(2);
         assert.deepEqual(calls, [1, 2]);

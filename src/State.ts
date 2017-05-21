@@ -9,6 +9,8 @@ export class State<T> {
 
     public logEnabled = false;
 
+    protected pristine = true;
+
     protected stateValue: T | undefined;
 
     private inputStream: Observable<T | undefined>;
@@ -33,11 +35,14 @@ export class State<T> {
     public connect(): this {
         this.disconnect();
         this.sourceSubscription = this.inputStream
-                .startWith(this.initialValue)
-                .map(val => {
+                // .startWith(this.initialValue)
+                .subscribe(val => {
                     this.setInnerValue(val);
-                })
-                .subscribe();
+                });
+
+        if (this.isSetValueAfterConnect()) {
+            this.setInnerValue(this.initialValue);
+        }
 
         return this;
     }
@@ -49,6 +54,7 @@ export class State<T> {
         this.sourceSubscription && this.sourceSubscription.unsubscribe();
         this.sourceSubscription = undefined;
         this.stateValue = undefined;
+        this.pristine = true;
         return this;
     }
 
@@ -112,6 +118,10 @@ export class State<T> {
         return this.observerCount;
     }
 
+    protected isSetValueAfterConnect(): boolean {
+        return this.pristine;
+    }
+
     protected onObserverSubscribed(): void {
     }
 
@@ -157,6 +167,8 @@ export class State<T> {
     }
 
     private setInnerValue(val: T | undefined): void {
+        // console.log(this.name, "setInnerValue", val);
+        this.pristine = false;
         if (this.logEnabled) {
             this.logNewState(val);
         }

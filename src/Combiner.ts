@@ -3,8 +3,8 @@ import {State} from "./State";
 
 export class CombinerState<T extends any[]> extends State<T> {
 
-    constructor(source$: Observable<T>) {
-        super(source$);
+    constructor(source$: Observable<T>, initialArray: T) {
+        super(source$, initialArray);
     }
 
     isNonValue(vals: T): boolean {
@@ -47,9 +47,16 @@ export function combine<T1, T2, T3, T4, T5, T6>(state1: State<T1>,
                                                 state6: State<T6>): CombinerState<[T1, T2, T3, T4, T5, T6]>;
 
 export function combine(...states: State<any>[]): CombinerState<any> {
-    return new CombinerState<any>(Observable.combineLatest(
-            states.map(o => o.changes$()),
-            (...args: any[]) => args
-    ));
+    // strange workaround since Array(n) doesn't seem to generate exactly the same
+    const initialArray = [];
+    for (let i = 0; i < states.length; i++) {
+        initialArray.push(undefined);
+    }
+
+    return new CombinerState<any>(Observable
+            .combineLatest(
+                    states.map(o => o.changes$()),
+                    (...args: any[]) => args
+            ), initialArray);
 }
 
