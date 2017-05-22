@@ -13,7 +13,7 @@ describe("Combiner", function () {
         let combined = combine(state1, state2);
         combined.changes$()
                 .subscribe(i => {
-                    assert.deepEqual(i, [undefined, undefined]);
+                    assert.deepEqual<any>(i, [undefined, undefined]);
                     done();
                 });
     });
@@ -27,7 +27,7 @@ describe("Combiner", function () {
         let combined = combine(state1, state2);
         combined.nonValues$()
                 .subscribe(i => {
-                    assert.deepEqual(i, [undefined, undefined]);
+                    assert.deepEqual<any>(i, [undefined, undefined]);
                     done();
                 });
     });
@@ -44,7 +44,7 @@ describe("Combiner", function () {
 
         combined.changes$()
                 .subscribe(both => {
-                    assert.deepEqual(both, [1, undefined]);
+                    assert.deepEqual<any>(both, [1, undefined]);
                     done();
                 });
     });

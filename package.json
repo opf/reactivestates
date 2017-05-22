@@ -34,7 +34,7 @@
     "source-map-support": "^0.4.6",
     "ts-node": "^1.7.2",
     "tslint": "^5.0.0",
-    "typescript": "2.1.4",
+    "typescript": "2.3.2",
     "typings": "2.0.0",
     "webpack": "^1.14.0",
     "webpack-dev-server": "^1.16.2"

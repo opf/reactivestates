@@ -129,7 +129,7 @@ describe("Gate", function () {
         i2.clear();
         gate.passOne();
 
-        assert.deepEqual(
+        assert.deepEqual<any>(
                 values,
                 [
                         [false, undefined],

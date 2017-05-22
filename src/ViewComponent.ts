@@ -42,11 +42,11 @@ export function bootstrapView<T extends ViewComponent>(element: Element,
 
 export class ViewComponent extends Component {
 
-    readonly storeSelector = this.domElementType + "#store-" + this.storeId;
-
     readonly changed$: Observable<[string, State<any>]>;
 
     protected domElementType = "div";
+
+    readonly storeSelector = this.domElementType + "#store-" + this.storeId;
 
     protected context: Context;
 
