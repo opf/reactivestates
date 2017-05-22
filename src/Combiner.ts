@@ -1,62 +1,72 @@
 import {Observable} from "rxjs";
 import {State} from "./State";
 
-export class CombinerState<T extends any[]> extends State<T> {
+export class CombinerState<T extends Array<any>, X extends Array<any>> extends State<T, X> {
 
-    constructor(source$: Observable<T>, initialArray: T) {
-        super(source$, initialArray);
-    }
+    constructor(states: State<any, any>[]) {
+        // input
+        const input = Observable.combineLatest(
+                states.map(o => o.changes$()),
+                (...args: any[]) => args);
 
-    isNonValue(vals: T): boolean {
-        if (super.isNonValue(vals)) {
-            return true;
-        }
-        for (let v of vals) {
-            if (v === undefined) {
+        // isNonValue
+        const isNonValue = (x: X): x is X => {
+            if (x === undefined) {
                 return true;
             }
-        }
-        return false;
+
+            if (x.length === 0) {
+                return true;
+            }
+
+            for (let v of x) {
+                if (v === undefined) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // strange workaround since Array(n) doesn't seem to generate exactly the same
+        // const initialArray: X = [] as any;
+        // for (let i = 0; i < states.length; i++) {
+        //     initialArray.push(undefined);
+        // }
+
+        const afterConnect = () => {};
+        const afterDisConnect = () => {};
+
+        super(input, isNonValue, afterConnect, afterDisConnect);
     }
+
 }
 
 
-export function combine<T1, T2>(state1: State<T1>,
-                                state2: State<T2>): CombinerState<[T1, T2]>;
+export function combine<T1, T1X, T2, T2X>(state1: State<T1, T1X>,
+                                          state2: State<T2, T2X>): CombinerState<[T1, T2], [T1X, T2X]>;
 
-export function combine<T1, T2, T3>(state1: State<T1>,
-                                    state2: State<T2>,
-                                    state3: State<T3>): CombinerState<[T1, T2, T3]>;
+export function combine<T1, T1X, T2, T2X, T3, T3X>(state1: State<T1, T1X>,
+                                                   state2: State<T2, T2X>,
+                                                   state3: State<T3, T3X>): CombinerState<[T1, T2, T3], [T1X, T2X, T3X]>;
 
-export function combine<T1, T2, T3, T4>(state1: State<T1>,
-                                        state2: State<T2>,
-                                        state3: State<T3>,
-                                        state4: State<T4>): CombinerState<[T1, T2, T3, T4]>;
+export function combine<T1, T1X, T2, T2X, T3, T3X, T4, T4X>(state1: State<T1, T1X>,
+                                                            state2: State<T2, T2X>,
+                                                            state3: State<T3, T3X>,
+                                                            state4: State<T4, T4X>): CombinerState<[T1, T2, T3, T4], [T1X, T2X, T3X, T4X]>;
 
-export function combine<T1, T2, T3, T4, T5>(state1: State<T1>,
-                                            state2: State<T2>,
-                                            state3: State<T3>,
-                                            state4: State<T4>,
-                                            state5: State<T5>): CombinerState<[T1, T2, T3, T4, T5]>;
+export function combine<T1, T1X, T2, T2X, T3, T3X, T4, T4X, T5, T5X>(state1: State<T1, T1X>,
+                                                                     state2: State<T2, T2X>,
+                                                                     state3: State<T3, T3X>,
+                                                                     state4: State<T4, T4X>,
+                                                                     state5: State<T5, T5X>): CombinerState<[T1, T2, T3, T4, T5], [T1X, T2X, T3X, T4X, T5X]>;
 
-export function combine<T1, T2, T3, T4, T5, T6>(state1: State<T1>,
-                                                state2: State<T2>,
-                                                state3: State<T3>,
-                                                state4: State<T4>,
-                                                state5: State<T5>,
-                                                state6: State<T6>): CombinerState<[T1, T2, T3, T4, T5, T6]>;
+export function combine<T1, T1X, T2, T2X, T3, T3X, T4, T4X, T5, T5X, T6, T6X>(state1: State<T1, T1X>,
+                                                                              state2: State<T2, T2X>,
+                                                                              state3: State<T3, T3X>,
+                                                                              state4: State<T4, T4X>,
+                                                                              state5: State<T5, T5X>,
+                                                                              state6: State<T6, T6X>): CombinerState<[T1, T2, T3, T4, T5, T6], [T1X, T2X, T3X, T4X, T5X, T6X]>;
 
-export function combine(...states: State<any>[]): CombinerState<any> {
-    // strange workaround since Array(n) doesn't seem to generate exactly the same
-    const initialArray = [];
-    for (let i = 0; i < states.length; i++) {
-        initialArray.push(undefined);
-    }
-
-    return new CombinerState<any>(Observable
-            .combineLatest(
-                    states.map(o => o.changes$()),
-                    (...args: any[]) => args
-            ), initialArray);
+export function combine(...states: State<any, any>[]): CombinerState<any, any> {
+    return new CombinerState(states);
 }
-

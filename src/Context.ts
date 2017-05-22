@@ -2,13 +2,13 @@ import {Subject} from "rxjs";
 import {State} from "./State";
 
 export interface Context {
-    changed$: Subject<[string, State<any>]>;
+    changed$: Subject<[string, State<any, any>]>;
     create: typeof create;
 }
 
 class ContextImpl implements Context {
 
-    changed$ = new Subject<[string, State<any>]>();
+    changed$ = new Subject<[string, State<any, any>]>();
     create = create;
 
 }

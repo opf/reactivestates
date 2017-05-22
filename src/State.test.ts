@@ -3,23 +3,23 @@ import {observableToState} from "./State";
 
 describe("State", function () {
 
-    it("is empty after creation", function () {
+    it("has NonValue after creation", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         assert.isFalse(s1.hasValue());
     });
 
-    it("calls forEach", function (done) {
+    it("future values can be subscribed with values$", function (done) {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
-        dummy.next(1);
         s1.values$().subscribe(val => {
             assert.equal(val, 1);
             done();
         });
+        dummy.next(1);
     });
 
-    it("observeAll has 'undefined' state after creation", function (done) {
+    it("changes$ has 'undefined' state after creation", function (done) {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         s1.changes$()
@@ -29,7 +29,7 @@ describe("State", function () {
                 });
     });
 
-    it("observeNonValues has 'undefined' state after creation", function (done) {
+    it("nonValues$ has 'undefined' state after creation", function (done) {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         s1.nonValues$()
@@ -137,7 +137,7 @@ describe("State", function () {
         value.next(undefined);
         value.next(3);
 
-        assert.deepEqual(calls, ["nonValue", "value:1", "value:2", "nonValue", "value:3"])
+        assert.deepEqual(calls, ["nonValue", "value:1", "value:2", "nonValue", "value:3"]);
     });
 
 });

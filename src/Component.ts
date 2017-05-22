@@ -10,7 +10,7 @@ export class Component implements Injectable {
 
     name = "store-" + this.storeId;
 
-    protected members: State<any>[] | null = null;
+    protected members: State<any, any>[] | null = null;
 
     enableLog(enable: boolean) {
         if (enable) {

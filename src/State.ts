@@ -1,19 +1,20 @@
 import {Observable, ReplaySubject, Subscription} from "rxjs";
 import {Observer} from "rxjs/Observer";
+import {Subject} from "rxjs/Subject";
 
 let unnamedStateCounter = 0;
 
-export class State<T> {
+export class State<T, X> {
 
     public name = "unnamed-state-" + unnamedStateCounter++;
 
     public logEnabled = false;
 
-    protected pristine = true;
+    public pristine = true;
 
-    protected stateValue: T | undefined;
+    protected stateValue: T | X;
 
-    private inputStream: Observable<T | undefined>;
+    private inputStream: Observable<T | X>;
 
     private sourceSubscription: Subscription | undefined;
 
@@ -21,13 +22,18 @@ export class State<T> {
 
     private timestampOfLastValue = -1;
 
-    private outputStream = new ReplaySubject<T | undefined>(1);
+    private outputStream: Subject<T | X> = new ReplaySubject<T | X>(1);
 
-    private value$ = this.outputStream.filter(v => !this.isNonValue(v));
+    private value$: Observable<T> = this.outputStream.filter(v => !this.isNonValue(v));
 
-    private nonValue$ = this.outputStream.filter(v => this.isNonValue(v));
+    private nonValue$: Observable<X> = this.outputStream.filter(v => this.isNonValue(v));
 
-    constructor(source$: Observable<T | undefined>, private initialValue?: T | undefined) {
+    constructor(source$: Observable<T | X>,
+                public readonly isNonValue: (val: T | X) => val is X,
+                private readonly afterConnect: (state: State<T, X>, setStateFn: (val: T | X) => void) => void,
+                private readonly afterDisconnect: (state: State<T, X>, setStateFn: (val: T | X) => void) => void
+                /*private readonly getNonValue: () => X*/) {
+
         this.inputStream = source$;
         this.connect();
     }
@@ -35,25 +41,22 @@ export class State<T> {
     public connect(): this {
         this.disconnect();
         this.sourceSubscription = this.inputStream
-                // .startWith(this.initialValue)
                 .subscribe(val => {
                     this.setInnerValue(val);
                 });
 
-        if (this.isSetValueAfterConnect()) {
-            this.setInnerValue(this.initialValue);
-        }
-
+        this.afterConnect(this, this.setInnerValue.bind(this));
         return this;
     }
 
     public disconnect(): this {
-        if (this.hasValue()) {
-            this.setInnerValue(undefined);
-        }
+        // if (this.hasValue()) {
+        //     this.setInnerValue(this.getNonValue());
+        // }
+        this.afterDisconnect(this, this.setInnerValue.bind(this));
+
         this.sourceSubscription && this.sourceSubscription.unsubscribe();
         this.sourceSubscription = undefined;
-        this.stateValue = undefined;
         this.pristine = true;
         return this;
     }
@@ -74,11 +77,11 @@ export class State<T> {
         return !this.isNonValue(this.stateValue);
     }
 
-    public changes$(reason?: string): Observable<T | undefined> {
+    public changes$(reason?: string): Observable<T | X> {
         return this.wrapObserve(this.outputStream.asObservable(), reason);
     }
 
-    public changesPromise(): PromiseLike<T | undefined> {
+    public changesPromise(): PromiseLike<T | X> {
         return this.changes$().take(1).toPromise();
     }
 
@@ -90,24 +93,20 @@ export class State<T> {
         return this.values$().take(1).toPromise();
     }
 
-    public nonValues$(reason?: string): Observable<T | undefined> {
+    public nonValues$(reason?: string): Observable<X> {
         return this.wrapObserve(this.nonValue$, reason);
     }
 
-    public nonValuesPromise(): PromiseLike<T | undefined> {
+    public nonValuesPromise(): PromiseLike<T | X> {
         return this.nonValues$().take(1).toPromise();
     }
 
-    public isNonValue(val: T | undefined): boolean {
-        return val === undefined;
-    }
-
-    public get value(): T | undefined {
+    public get value(): T | X {
         return this.stateValue;
     }
 
     public getValueOr<B>(or: B): T | B {
-        return this.hasValue() ? this.value! : or;
+        return this.hasValue() ? this.value as T : or;
     }
 
     public get text(): string {
@@ -118,9 +117,11 @@ export class State<T> {
         return this.observerCount;
     }
 
-    protected isSetValueAfterConnect(): boolean {
-        return this.pristine;
-    }
+    // protected afterConnect() {
+    //     if (this.pristine) {
+    //         this.setInnerValue(this.getNonValue());
+    //     }
+    // }
 
     protected onObserverSubscribed(): void {
     }
@@ -128,7 +129,7 @@ export class State<T> {
     protected onObserverUnsubscribed(): void {
     }
 
-    protected logNewState(value: T | undefined) {
+    protected logNewState(value: T | X) {
         let stringify = "undefined";
         if (value !== undefined) {
             stringify = value.toString();
@@ -142,8 +143,25 @@ export class State<T> {
         console.log("[" + this.name + "] " + message);
     }
 
-    private wrapObserve($: Observable<T>, reason?: string): Observable<T> {
-        return Observable.create((subscriber: Observer<T>) => {
+    protected setInnerValue(val: T | X): void {
+        // console.log(this.name, "setInnerValue", val);
+        this.pristine = false;
+        if (this.logEnabled) {
+            this.logNewState(val);
+        }
+        this.stateValue = val;
+
+        if (!this.isNonValue(val)) {
+            this.timestampOfLastValue = Date.now();
+        } else {
+            this.timestampOfLastValue = -1;
+        }
+
+        this.outputStream.next(val);
+    }
+
+    private wrapObserve<O extends T | X>($: Observable<O>, reason?: string): Observable<O> {
+        return Observable.create((subscriber: Observer<O>) => {
             this.observerCount++;
             this.onObserverSubscribed();
             $.subscribe(
@@ -166,26 +184,20 @@ export class State<T> {
         });
     }
 
-    private setInnerValue(val: T | undefined): void {
-        // console.log(this.name, "setInnerValue", val);
-        this.pristine = false;
-        if (this.logEnabled) {
-            this.logNewState(val);
-        }
-        this.stateValue = val;
-
-        if (!this.isNonValue(val)) {
-            this.timestampOfLastValue = Date.now();
-        } else {
-            this.timestampOfLastValue = -1;
-        }
-
-        this.outputStream.next(val);
-    }
-
 }
 
-export function observableToState<T>(input$: Observable<T | undefined>): State<T> {
-    return new State(input$);
+export function observableToState<T>(input$: Observable<T | undefined>): State<T, undefined> {
+    return new State<T, undefined>(
+            input$,
+            (x): x is undefined => x === undefined,
+            (state, setStateFn) => {
+                if (state.pristine) {
+                    setStateFn(undefined);
+                }
+            }, (state, setStateFn) => {
+                if (state.hasValue()) {
+                    setStateFn(undefined);
+                }
+            });
 }
 
