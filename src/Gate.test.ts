@@ -8,7 +8,7 @@ describe("Gate", function () {
         const i1 = input(1);
         const gate = gateFor(i1);
 
-        gate.forEach(() => {
+        gate.values$().subscribe(() => {
             throw new Error();
         });
     });
@@ -17,7 +17,7 @@ describe("Gate", function () {
         const i1 = input(1);
         const gate = gateFor(i1);
 
-        gate.forEach(i => {
+        gate.values$().subscribe(i => {
             assert.equal(i, 1);
             done();
         });
@@ -30,7 +30,7 @@ describe("Gate", function () {
         const gate = gateFor(i1);
 
         const values: number[] = [];
-        gate.forEach(i => {
+        gate.values$().subscribe(i => {
             values.push(i);
         });
 
@@ -45,7 +45,7 @@ describe("Gate", function () {
         const i1 = input(1);
         const gate = gateFor(i1);
 
-        gate.forEach(i => {
+        gate.values$().subscribe(i => {
             assert.equal(i, 1);
         });
 
@@ -60,19 +60,16 @@ describe("Gate", function () {
         const gate = gateFor(i1);
 
         let counter = 0;
-        gate.forEach(
-                () => {
-                    throw new Error();
-                }, () => {
-                    // nonValuesSink will be called two times:
-                    // 1. nonValue state of gate
-                    // 2. nonvalue state from input after gate.passOne();
+        gate.nonValues$().subscribe(() => {
+            // nonValuesSink will be called two times:
+            // 1. nonValue state of gate
+            // 2. nonvalue state from input after gate.passOne();
 
-                    counter++;
-                    if (counter === 2) {
-                        done();
-                    }
-                });
+            counter++;
+            if (counter === 2) {
+                done();
+            }
+        });
 
         gate.passOne();
     });
@@ -81,12 +78,10 @@ describe("Gate", function () {
         const i1 = input<number>();
         const gate = gateFor(i1);
 
-        let values: number[] = [];
-        gate.forEach(
+        let values: (number|undefined)[] = [];
+        gate.changes$().subscribe(
                 val => {
                     values.push(val);
-                }, nonVal => {
-                    values.push(nonVal);
                 });
 
         gate.passOne();
@@ -112,11 +107,9 @@ describe("Gate", function () {
         const gate = gateFor(inputs);
 
         let values: [boolean, any][] = [];
-        gate.forEach(
-                val => {
-                    values.push([true, val]);
-                }, nonVal => {
-                    values.push([false, nonVal]);
+        gate.changes$().subscribe(
+                (val: any) => {
+                    values.push([inputs.isNonValue(val), val]);
                 });
 
         gate.passOne();
@@ -132,12 +125,12 @@ describe("Gate", function () {
         assert.deepEqual<any>(
                 values,
                 [
-                        [false, undefined],
-                        [false, [undefined, undefined, undefined]],
-                        [false, [1, undefined, undefined]],
-                        [false, [1, 2, undefined]],
-                        [true, [1, 2, 3]],
-                        [false, [1, undefined, 3]],
+                    [true, undefined],
+                    [true, [undefined, undefined, undefined]],
+                    [true, [1, undefined, undefined]],
+                    [true, [1, 2, undefined]],
+                    [false, [1, 2, 3]],
+                    [true, [1, undefined, 3]],
                 ]
         );
     });

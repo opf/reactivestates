@@ -38,20 +38,6 @@ export class StateCache<T, S extends State<T>> extends InputState<{ [key: string
         }
 
         return map[id];
-        // this.doModify(map => {
-        //     if (map[id] === undefined) {
-        //         const newState = this.stateFactory();
-        //         map[id] = newState;
-        //         newState.changes$()
-        //                 .takeUntil(this.observeRemove().filter(val => val === id))
-        //                 .subscribe(val => {
-        //                     this.change$.next([id, val, newState]);
-        //                 });
-        //     }
-        //     return map;
-        // });
-        //
-        // return this.value![id];
     }
 
     remove(id: string): S|undefined {
@@ -65,15 +51,6 @@ export class StateCache<T, S extends State<T>> extends InputState<{ [key: string
         }
 
         return state;
-        // this.doModify(map => {
-        //     const state = map[id];
-        //     state && state.disconnect();
-        //     delete map[id];
-        //     this.remove$.next(id);
-        //     return map;
-        // });
-        //
-        // return this.value![id];
     }
 
     observeChange(): Observable<[string, T | undefined, S]> {
