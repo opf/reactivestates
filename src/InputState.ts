@@ -1,22 +1,33 @@
 import {Observable, Subject} from "rxjs";
-import {State} from "./State";
+import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 
-export class InputState<T> extends State<T> {
+export class InputState<T> extends State<T, undefined> {
 
     private state: Subject<T>;
 
     private timestampOfLastPromise: number;
 
-    constructor(initialValue: T|undefined) {
-        const state = new Subject<T>();
-        super(state, initialValue);
+    constructor(initialValue: T | undefined) {
+        const isNonValue = (val: T | undefined): val is undefined => {
+            return val === undefined;
+        };
+        const afterConnect: AfterConnectFn<T, undefined> = (state, setStateFn) => {
+            setStateFn(initialValue);
+        };
+        const afterDisConnect: AfterDisConnectFn<T, undefined> = (state, setStateFn) => {
+            if (state.hasValue()) {
+                setStateFn(undefined);
+            }
+        };
 
-        this.stateValue = initialValue;
+        const state = new Subject<T>();
+        super(state, isNonValue, afterConnect, afterDisConnect);
+
         this.state = state;
         this.timestampOfLastPromise = -1;
     }
 
-    putValue(val: T|undefined, reason?: string): this {
+    putValue(val: T | undefined, reason?: string): this {
         reason && this.log(reason);
         this.state.next(val);
         return this;
@@ -67,7 +78,7 @@ export class InputState<T> extends State<T> {
         return this;
     }
 
-    doModify(valueMapper: (val: T) => T|Observable<T>, or?: () => T|Observable<T>): this {
+    doModify(valueMapper: (val: T) => T | Observable<T>, or?: () => T | Observable<T>): this {
         if (this.hasValue()) {
             this.values$().take(1).subscribe(oldVal => {
                 let newInput = valueMapper(oldVal);
@@ -94,6 +105,6 @@ export class InputState<T> extends State<T> {
 
 }
 
-export function input<T>(initValue: T|undefined = undefined) {
+export function input<T>(initValue: T | undefined = undefined) {
     return new InputState(initValue);
 }

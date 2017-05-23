@@ -1,5 +1,5 @@
 import {input} from "./InputState";
-import {derive, deriveRaw} from "./DerivedState";
+import {deriveRaw} from "./DerivedState";
 
 describe("DerivedState", function () {
 
@@ -7,14 +7,19 @@ describe("DerivedState", function () {
         const calls: string[] = [];
 
         const input$ = input<number>();
-        const state2 = deriveRaw(input$, ($, input) => $
-                .map(v => {
-                    if (input.isNonValue(v)) {
-                        return -1;
-                    } else {
-                        return v! + 1000;
-                    }
-                }));
+        const state2 = deriveRaw(
+                input$,
+                ($, input) => $
+                        .map(v => {
+                            if (input.isNonValue(v)) {
+                                return -1;
+                            } else {
+                                return v! + 1000;
+                            }
+                        }),
+                (x: any): x is undefined => {
+                    return false;
+                });
 
         input$.changes$().subscribe(val => {
             calls.push("state1:" + JSON.stringify(val));

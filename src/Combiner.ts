@@ -10,7 +10,7 @@ export class CombinerState<T extends Array<any>, X extends Array<any>> extends S
                 (...args: any[]) => args);
 
         // isNonValue
-        const isNonValue = (x: X): x is X => {
+        const isNonValue = (x: T|X): x is X => {
             if (x === undefined) {
                 return true;
             }
@@ -26,12 +26,6 @@ export class CombinerState<T extends Array<any>, X extends Array<any>> extends S
             }
             return false;
         };
-
-        // strange workaround since Array(n) doesn't seem to generate exactly the same
-        // const initialArray: X = [] as any;
-        // for (let i = 0; i < states.length; i++) {
-        //     initialArray.push(undefined);
-        // }
 
         const afterConnect = () => {};
         const afterDisConnect = () => {};

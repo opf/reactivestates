@@ -4,6 +4,10 @@ import {Subject} from "rxjs/Subject";
 
 let unnamedStateCounter = 0;
 
+export type IsNonValueFn<T, X> = (x: T | X) => x is X;
+export type AfterConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
+export type AfterDisConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
+
 export class State<T, X> {
 
     public name = "unnamed-state-" + unnamedStateCounter++;
@@ -30,8 +34,8 @@ export class State<T, X> {
 
     constructor(source$: Observable<T | X>,
                 public readonly isNonValue: (val: T | X) => val is X,
-                private readonly afterConnect: (state: State<T, X>, setStateFn: (val: T | X) => void) => void,
-                private readonly afterDisconnect: (state: State<T, X>, setStateFn: (val: T | X) => void) => void
+                private readonly afterConnect: AfterConnectFn<T, X>,
+                private readonly afterDisconnect: AfterDisConnectFn<T, X>
                 /*private readonly getNonValue: () => X*/) {
 
         this.inputStream = source$;
@@ -164,7 +168,7 @@ export class State<T, X> {
         return Observable.create((subscriber: Observer<O>) => {
             this.observerCount++;
             this.onObserverSubscribed();
-            $.subscribe(
+            const sub = $.subscribe(
                     val => {
                         if (reason !== undefined) {
                             this.log("-> " + reason);
@@ -178,6 +182,7 @@ export class State<T, X> {
             );
 
             return () => {
+                sub.unsubscribe();
                 this.observerCount--;
                 this.onObserverUnsubscribed();
             };
