@@ -1,15 +1,14 @@
-import {input} from "./InputState";
-import {inputStateCache, stateCache} from "./StateCache";
+import {multiInput} from "./MultiInputState";
 
 describe("StateCache", function () {
 
     it("is empty after creation", function () {
-        const s = stateCache(() => input<string>());
+        const s = multiInput<string>();
         assert.deepEqual(s.value, {});
     });
 
     it("fills previously requested states", function () {
-        const s = inputStateCache<string>();
+        const s = multiInput<string>();
         let stateA = s.get("a");
         const calls: any[] = [];
         stateA.changes$().subscribe(val => {
@@ -20,14 +19,14 @@ describe("StateCache", function () {
     });
 
     it("can remove entries", function () {
-        const s = stateCache(() => input<string>());
+        const s = multiInput<string>();
         s.get("a").putValue("a");
         s.remove("a");
         assert.deepEqual(s.value, {});
     });
 
     it("removing a states also disconnects it", function () {
-        const sm = stateCache(() => input<string>());
+        const sm = multiInput<string>();
         const stateA = sm.get("a");
         stateA.putValue("a");
         assert.isTrue(stateA.isConnected());
@@ -36,7 +35,7 @@ describe("StateCache", function () {
     });
 
     it("change events can be observed", function (done) {
-        const sm = stateCache(() => input<string>());
+        const sm = multiInput<string>();
 
         let callCount = 0;
         sm.observeChange().subscribe(([key, val, state]) => {
@@ -55,7 +54,7 @@ describe("StateCache", function () {
     });
 
     it("remove events can be observed", function (done) {
-        const sm = stateCache(() => input<string>());
+        const sm = multiInput<string>();
         sm.get("a").putValue("a");
 
         sm.observeRemove()

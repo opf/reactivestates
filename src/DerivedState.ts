@@ -10,15 +10,16 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
     constructor(inputState: State<IT, IX>,
                 stream: Observable<OT | OX>,
                 isNonValue: IsNonValueFn<OT, OX>,
-                defaultWhenInputHasNonValue?: OT | OX) {
+                defaultNonValue: OX,
+                defaultWhenInputHasNonValue: OT | OX) {
 
         const afterConnect: AfterConnectFn<OT, OX> = (state, setStateFn) => {
-            if (!state.hasValue() && defaultWhenInputHasNonValue !== undefined) {
+            if (!state.hasValue()) {
                 setStateFn(defaultWhenInputHasNonValue);
             }
         };
         const afterDisConnect: AfterDisConnectFn<OT, OX> = (state, setStateFn) => {
-            setStateFn(defaultWhenInputHasNonValue!);
+            setStateFn(defaultNonValue);
         };
 
         super(stream, isNonValue, afterConnect, afterDisConnect);
@@ -49,22 +50,27 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
 }
 
 
-export function deriveRaw<IT, IX, OT, OX>(state: State<IT, IX>,
-                                          transformer: ($: Observable<IT | IX>, inputState: State<IT, IX>) => Observable<OT | OX>,
-                                          isNonValue: IsNonValueFn<OT, OX>): DerivedState<IT, IX, OT, OX> {
+export function deriveRaw<IT, IX, OT>(state: State<IT, IX>,
+                                      transformer: ($: Observable<IT | IX>, inputState: State<IT, IX>) => Observable<OT | undefined>): DerivedState<IT, IX, OT, undefined> {
 
-    const transformed: Observable<OT | OX> = transformer(state.changes$(), state);
-    return new DerivedState<IT, IX, OT, OX>(state, transformed, isNonValue);
+    const transformed: Observable<OT | undefined> = transformer(state.changes$(), state);
+    const isNonValue = (val: OT | undefined): val is undefined => {
+        return val === undefined;
+    };
+
+    return new DerivedState<IT, IX, OT, undefined>(state, transformed, isNonValue, undefined, undefined);
 }
 
-export function derive<IT, IX, OT, OX>(state: State<IT, IX>,
-                                       transformer: ($: Observable<IT | IX>, inputState: State<IT, IX>) => Observable<OT | OX>,
-                                       isNonValue: IsNonValueFn<OT, OX>,
-                                       defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, OX> {
+export function derive<IT, IX, OT>(state: State<IT, IX>,
+                                       transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT>,
+                                       defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
 
-    const values$: Observable<T> = transformer(state.values$(), state);
-    const nonValues$: Observable<undefined> = state.nonValues$();
-    const source$: Observable<T | undefined> = Observable.merge(nonValues$, values$);
+    const values$: Observable<OT> = transformer(state.values$(), state);
+    const nonValues$: Observable<undefined> = state.nonValues$().map(nonValue => undefined);
+    const source$: Observable<OT | undefined> = Observable.merge(nonValues$, values$);
+    const isNonValue = (val: OT | undefined): val is undefined => {
+        return val === undefined;
+    };
 
-    return new DerivedState(state, source$, defaultWhenInputHasNonValue);
+    return new DerivedState<IT, IX, OT, undefined>(state, source$, isNonValue, undefined, defaultWhenInputHasNonValue);
 }

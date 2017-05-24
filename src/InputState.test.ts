@@ -9,7 +9,7 @@ describe("InputState", function () {
 
         s1.values$().subscribe(() => {
             throw new Error();
-        })
+        });
     });
 
     it("can have an initial value", function (done) {
@@ -41,7 +41,7 @@ describe("InputState", function () {
         s1.changes$().subscribe(i => {
             assert.equal(i, 1);
             done();
-        })
+        });
     });
 
     it("can be cleared", function () {
@@ -83,12 +83,12 @@ describe("InputState", function () {
         });
     });
 
-    it("calls doOnValue with inital value of 0", function (done) {
+    it("calls doOnValue with initial value of 0", function (done) {
         const s1 = input(0);
         s1.values$().subscribe(val => {
             assert.equal(val, 0);
             done();
-        })
+        });
     });
 
     it("putFromPromise", function (done) {

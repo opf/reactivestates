@@ -46,7 +46,7 @@ export class ViewComponent extends Component {
 
     readonly storeSelector = this.domElementType + "#store-" + this.storeId;
 
-    readonly changed$: Observable<[string, State<any>]>;
+    readonly changed$: Observable<[string, State<any, any>]>;
 
     protected context: Context;
 

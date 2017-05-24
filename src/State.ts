@@ -43,7 +43,9 @@ export class State<T, X> {
     }
 
     public connect(): this {
-        this.disconnect();
+        if (this.isConnected()) {
+            this.disconnect();
+        }
         this.sourceSubscription = this.inputStream
                 .subscribe(val => {
                     this.setInnerValue(val);
