@@ -1,10 +1,9 @@
-import * as _ from "lodash";
 import {Injectable} from "./Context";
 import {State} from "./State";
 
 let nextStoreId = 0;
 
-export class Component implements Injectable {
+export class StatesGroup implements Injectable {
 
     readonly storeId = nextStoreId++;
 
@@ -12,17 +11,28 @@ export class Component implements Injectable {
 
     protected members: State<any, any>[] | null = null;
 
-    enableLog(enable: boolean) {
-        if (enable) {
-            if (this.members === null) {
-                this.initializeMembers();
-            }
-        }
+    enableLog(enable: boolean): this {
+        this.initializeMembers();
         this.members!.forEach(m => m.logEnabled = enable);
         return this;
     }
 
+    connectAll(): this {
+        this.initializeMembers();
+        this.members!.forEach(m => m.connect());
+        return this;
+    }
+
+    disconnectAll(): this {
+        this.initializeMembers();
+        this.members!.forEach(m => m.disconnect());
+        return this;
+    }
+
     protected initializeMembers(path: string = "", obj: any = this) {
+        if (this.members !== null) {
+            return;
+        }
         this.members = [];
         for (const propertyName in obj) {
             if (obj.hasOwnProperty(propertyName)) {
@@ -31,15 +41,11 @@ export class Component implements Injectable {
                 if (member instanceof State) {
                     member.name = this.name + path + "." + propertyName;
                     this.members.push(member);
-                }
-
-                else if (_.isPlainObject(member)) {
+                } else if (typeof member === "object") {
                     this.initializeMembers(path + "." + propertyName, member);
                 }
-
             }
         }
-
     }
 
 }
