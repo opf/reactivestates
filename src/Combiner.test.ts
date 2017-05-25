@@ -104,7 +104,6 @@ describe("Combiner", function () {
         combined.disconnect();
         combined.connect();
 
-        console.log(calls);
         assert.deepEqual<any>(calls, [
             [undefined, undefined],
             [undefined, undefined],
