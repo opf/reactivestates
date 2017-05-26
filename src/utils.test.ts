@@ -2,7 +2,7 @@ import {input} from "./InputState";
 import {State} from "./State";
 import {IfThen} from "./utils";
 
-describe("Util", function () {
+describe("Utils", function () {
 
     it("IfThen", function () {
         // switch and value to process differently based on the switch
