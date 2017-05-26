@@ -1,6 +1,7 @@
 import {Observable, ReplaySubject, Subscription} from "rxjs";
 import {Observer} from "rxjs/Observer";
 import {Subject} from "rxjs/Subject";
+import {logStateChange} from "./log";
 
 let unnamedStateCounter = 0;
 
@@ -123,6 +124,10 @@ export class State<T, X> {
         return this.observerCount;
     }
 
+    public getStateChain(): State<any, any>[] {
+        return [this];
+    }
+
     // protected afterConnect() {
     //     if (this.pristine) {
     //         this.setInnerValue(this.getNonValue());
@@ -135,27 +140,17 @@ export class State<T, X> {
     protected onObserverUnsubscribed(): void {
     }
 
-    protected logNewState(value: T | X) {
-        let stringify = "undefined";
-        if (value !== undefined) {
-            stringify = value.toString();
-            stringify = stringify.length > 50 ? stringify.substr(0, 50) + "..." : stringify;
-        }
-
-        this.log("= " + stringify);
-    }
-
-    protected log(message: string) {
-        console.log("[" + this.name + "] " + message);
+    protected log() {
+        logStateChange(this.getStateChain(), this.stateValue);
     }
 
     protected setInnerValue(val: T | X): void {
-        // console.log(this.name, "setInnerValue", val);
-        this.pristine = false;
-        if (this.logEnabled) {
-            this.logNewState(val);
-        }
         this.stateValue = val;
+        this.pristine = false;
+
+        if (this.logEnabled) {
+            this.log();
+        }
 
         if (!this.isNonValue(val)) {
             this.timestampOfLastValue = Date.now();
@@ -173,7 +168,8 @@ export class State<T, X> {
             const sub = $.subscribe(
                     val => {
                         if (reason !== undefined) {
-                            this.log("-> " + reason);
+                            // TODO
+                            // this.log("-> " + reason);
                         }
                         subscriber.next(val);
                     }, error => {

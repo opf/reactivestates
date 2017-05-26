@@ -36,6 +36,10 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
         return this;
     }
 
+    public getStateChain(): State<any, any>[] {
+        return [...this.inputState.getStateChain(), this];
+    }
+
     protected onObserverSubscribed() {
         if (this.getObserverCount() === 1) {
             this.connect();
