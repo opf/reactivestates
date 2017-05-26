@@ -47,7 +47,7 @@ describe("DerivedState", function () {
         const calls: string[] = [];
 
         const input$ = input<number>();
-        const state2 = derive(input$, $ => $.map(v => v + 1000));
+        const state2 = derive<number, number>(input$, $ => $.map(v => v + 1000));
 
         input$.changes$().subscribe(val => {
             calls.push("state1:" + JSON.stringify(val));
@@ -74,12 +74,53 @@ describe("DerivedState", function () {
         ]);
     });
 
+    it("inherits the cleared-state from its input", function () {
+        const input$ = input<number>(1);
+        const derived = derive(input$, $ => $.map(v => v + 1000));
+        derived.values$().subscribe();
+
+        assert.equal(input$.value, 1);
+        assert.equal(derived.value, 1001);
+        input$.clear();
+        assert.isFalse(input$.hasValue());
+        assert.isFalse(derived.hasValue());
+    });
+
+    it("can filter/limit the input stream", function () {
+        const input$ = input<number>(1);
+        const derived = derive(input$, $ => $.filter(v => v === 2));
+        derived.values$().subscribe();
+
+        assert.equal(input$.value, 1);
+        assert.isFalse(derived.hasValue());
+        input$.putValue(2);
+        assert.equal(input$.value, 2);
+        assert.isTrue(derived.hasValue());
+    });
+
+    it("can switch to a cleared state independent from its input", function () {
+        const input$ = input<number>(1);
+        const derived = derive(input$, $ => $.map(v => v === 2 ? undefined : v));
+        derived.values$().subscribe();
+
+        assert.equal(input$.value, 1);
+        assert.equal(derived.value, 1);
+        input$.putValue(2);
+        assert.equal(input$.value, 2);
+        assert.isFalse(derived.hasValue());
+    });
+
     it("does not execute the inner transformer without subscribers", function () {
         const input$ = input(1);
         deriveRaw(input$, $ => $
                 .map(() => {
                     throw Error();
                 }));
+    });
+
+    it("can be switched to be eager", function (done) {
+        const input$ = input(1);
+        derive(input$, $ => $.do(() => done())).eager();
     });
 
     it("executes the inner transformer once an observer subscribes", function (done) {
@@ -150,6 +191,16 @@ describe("DerivedState", function () {
         derived$.changes$().subscribe(v => calls.push(v));
         input$.putValue(2);
         assert.deepEqual(calls, [1, 2]);
+    });
+
+    it("initial value is only used at the beginning, not as a replacement for cleared", function () {
+        const calls: any[] = [];
+        const input$ = input<number>();
+        const derived$ = derive(input$, $ => $, 1);
+        derived$.changes$().subscribe(v => calls.push(v));
+        input$.putValue(2);
+        input$.clear();
+        assert.deepEqual(calls, [1, 2, undefined]);
     });
 
 });

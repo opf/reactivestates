@@ -1,11 +1,11 @@
 import {Subject} from "rxjs";
-import {observableToState} from "./State";
+import {observableToState, State} from "./State";
 
 describe("State", function () {
 
     it("has NonValue after creation", function () {
         const dummy = new Subject<number>();
-        const s1 = observableToState(dummy);
+        const s1: State<number, undefined> = observableToState(dummy);
         assert.isFalse(s1.hasValue());
     });
 

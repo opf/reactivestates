@@ -1,7 +1,7 @@
 import {Subject} from "rxjs";
 import {State} from "./State";
 
-export class Toggle extends State<boolean, undefined> {
+export class ToggleInput extends State<boolean, undefined> {
 
     private trigger$: Subject<boolean>;
     private state: boolean;
@@ -26,7 +26,7 @@ export class Toggle extends State<boolean, undefined> {
 
 }
 
-export function toggle(state = false): Toggle {
-    return new Toggle(state);
+export function toggleInput(state = false): ToggleInput {
+    return new ToggleInput(state);
 }
 

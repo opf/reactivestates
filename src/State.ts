@@ -9,7 +9,7 @@ export type IsNonValueFn<T, X> = (x: T | X) => x is X;
 export type AfterConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
 export type AfterDisConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
 
-export class State<T, X> {
+export class State<T, X = undefined> {
 
     public name = "unnamed-state-" + unnamedStateCounter++;
 

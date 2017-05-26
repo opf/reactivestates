@@ -1,5 +1,5 @@
 import {BehaviorSubject, Subject} from "rxjs";
-import {combine} from "./Combiner";
+import {combine, CombinerState} from "./Combiner";
 import {observableToState} from "./State";
 
 describe("Combiner", function () {
@@ -10,7 +10,7 @@ describe("Combiner", function () {
         const state1 = observableToState(dummy1);
         const state2 = observableToState(dummy2);
 
-        const combined = combine(state1, state2);
+        const combined: CombinerState<[number, number], [undefined, undefined]> = combine(state1, state2);
         combined.changes$()
                 .subscribe(i => {
                     assert.deepEqual<any>(i, [undefined, undefined]);

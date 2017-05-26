@@ -40,6 +40,11 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
         return [...this.inputState.getStateChain(), this];
     }
 
+    public eager(): this {
+        this.changes$("eager mode").subscribe();
+        return this;
+    }
+
     protected onObserverSubscribed() {
         if (this.getObserverCount() === 1) {
             this.connect();
@@ -65,9 +70,9 @@ export function deriveRaw<IT, IX, OT>(state: State<IT, IX>,
     return new DerivedState<IT, IX, OT, undefined>(state, transformed, isNonValue, undefined, undefined);
 }
 
-export function derive<IT, IX, OT>(state: State<IT, IX>,
-                                       transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT>,
-                                       defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
+export function derive<IT, OT, IX = undefined>(state: State<IT, IX>,
+                                               transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT|undefined>,
+                                               defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
 
     const values$: Observable<OT> = transformer(state.values$(), state);
     const nonValues$: Observable<undefined> = state.nonValues$().map(nonValue => undefined);

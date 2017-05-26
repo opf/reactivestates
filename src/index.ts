@@ -5,6 +5,7 @@ export * from "./DerivedState";
 export * from "./Gate";
 export * from "./InputState";
 export * from "./MultiInputState";
-export * from "./Toggle";
+export * from "./ToggleInput";
 export * from "./State";
+export * from "./utils";
 
