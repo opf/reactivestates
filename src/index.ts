@@ -8,4 +8,5 @@ export * from "./MultiInputState";
 export * from "./ToggleInput";
 export * from "./State";
 export * from "./utils";
+export * from "./log";
 

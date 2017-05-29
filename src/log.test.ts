@@ -1,25 +1,35 @@
-import {derive, deriveRaw} from "./DerivedState";
+import {derive} from "./DerivedState";
 import {input} from "./InputState";
+import {setLogger} from "./log";
 import {StatesGroup} from "./StatesGroup";
 
 describe("log", function () {
 
     it("log on state change", function () {
+        setLogger(() => {
+        });
+
         class States extends StatesGroup {
             name = "group1";
-            input$ = input<number>(1);
+            input$ = input<number>();
             state2 = derive(this.input$, $ => $.map(v => v + 1000));
         }
 
         const states = new States();
         states.enableLog(true);
-
         states.state2.changes$().subscribe();
 
-        states.input$.putValue(2);
-        states.input$.putValue(undefined);
-        states.input$.putValue(3);
+        let logged = "";
+        setLogger(msg => {
+            logged += msg;
+        });
 
+        states.input$.putValue(1);
+
+        assert.include(logged, "group1.input$");
+        assert.include(logged, "= 1");
+        assert.include(logged, "group1.state2");
+        assert.include(logged, "= 1001");
     });
 
 });

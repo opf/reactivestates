@@ -24,8 +24,8 @@ function getValueString(value: any) {
 }
 
 export function logStateChange(states: State<any, any>[], value: any, msg?: string) {
-    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 5000) {
-        logger("[RS] ------------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
+    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
+        logger("[RS] ------------------------------------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
     }
 
     const path = states.map(s => `${s.name}(${s.getObserverCount()})`).join(" | ");
