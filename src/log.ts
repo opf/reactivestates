@@ -23,16 +23,16 @@ function getValueString(value: any) {
     return stringify;
 }
 
-export function logStateChange(states: State<any, any>[], value: any, msg?: string) {
+export function logStateChange(state: State<any, any>, states: State<any, any>[], value: any, msg?: string) {
     if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
         logger("[RS] ------------------------------------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
     }
 
-    const path = states.map(s => `${s.name}(${s.getObserverCount()})`).join(" | ");
+    const path = states.map(s => `${s.name}`).join(" | ");
     const valueString = getValueString(value);
-    const mesgs = msg !== undefined ? "// " + msg : "";
+    const mesgs = msg !== undefined ? "// " + msg + " " : "";
 
-    logger(`[RS] ${path} = ${valueString} ${mesgs}`);
+    logger(`[RS] ${path} = ${valueString} ${mesgs}     {o=${state.getSubscriberCount()}}`);
 
     lastLogMessage = Date.now();
 }

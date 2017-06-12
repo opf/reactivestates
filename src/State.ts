@@ -17,6 +17,8 @@ export class State<T, X = undefined> {
 
     public pristine = true;
 
+    public outputStreamTrailing: Subject<T | X> = new ReplaySubject<T | X>(1);
+
     protected stateValue: T | X;
 
     private inputStream: Observable<T | X>;
@@ -116,23 +118,34 @@ export class State<T, X = undefined> {
         return this.hasValue() ? this.value as T : or;
     }
 
+    public mapOr<R>(fn: (v: T) => R, orValue: R): R {
+        if (this.hasValue()) {
+            return fn(this.value as T);
+        } else {
+            return orValue;
+        }
+    }
+
+    public forEach(fn: (v: T) => void): this {
+        this.values$().subscribe(v => fn(v));
+        return this;
+    }
+
     public get text(): string {
         return this.hasValue() ? this.value!.toString() : "";
     }
 
-    public getObserverCount() {
+    public getSubscriberCount(): number {
         return this.observerCount;
+    }
+
+    public hasSubscribers(): boolean {
+        return this.getSubscriberCount() > 0;
     }
 
     public getStateChain(): State<any, any>[] {
         return [this];
     }
-
-    // protected afterConnect() {
-    //     if (this.pristine) {
-    //         this.setInnerValue(this.getNonValue());
-    //     }
-    // }
 
     protected onObserverSubscribed(): void {
     }
@@ -141,7 +154,7 @@ export class State<T, X = undefined> {
     }
 
     protected log() {
-        logStateChange(this.getStateChain(), this.stateValue);
+        logStateChange(this, this.getStateChain(), this.stateValue);
     }
 
     protected setInnerValue(val: T | X): void {
@@ -159,6 +172,7 @@ export class State<T, X = undefined> {
         }
 
         this.outputStream.next(val);
+        this.outputStreamTrailing.next(val);
     }
 
     private wrapObserve<O extends T | X>($: Observable<O>, reason?: string): Observable<O> {

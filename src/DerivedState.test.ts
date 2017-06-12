@@ -7,7 +7,8 @@ describe("DerivedState", function () {
         const calls: string[] = [];
 
         const input$ = input<number>();
-        const state2 = deriveRaw(
+
+        const derived = deriveRaw(
                 input$,
                 ($, input) => $
                         .map(v => {
@@ -19,27 +20,29 @@ describe("DerivedState", function () {
                         }));
 
         input$.changes$().subscribe(val => {
-            calls.push("state1:" + JSON.stringify(val));
+            calls.push("input:" + JSON.stringify(val));
         });
 
-        state2.changes$().subscribe(val => {
-            calls.push("state2:" + JSON.stringify(val));
+        derived.changes$().subscribe(val => {
+            calls.push("derived:" + JSON.stringify(val));
         });
-
 
         input$.putValue(1);
         input$.putValue(undefined);
         input$.putValue(2);
 
         assert.deepEqual(calls, [
-            "state1:undefined",
-            "state2:-1",
-            "state1:1",
-            "state2:1001",
-            "state1:undefined",
-            "state2:-1",
-            "state1:2",
-            "state2:1002",
+            "input:undefined",
+            "derived:-1",
+
+            "input:1",
+            "derived:1001",
+
+            "input:undefined",
+            "derived:-1",
+
+            "input:2",
+            "derived:1002"
         ]);
     });
 
@@ -47,6 +50,7 @@ describe("DerivedState", function () {
         const calls: string[] = [];
 
         const input$ = input<number>();
+
         const state2 = derive<number, number>(input$, $ => $.map(v => v + 1000));
 
         input$.changes$().subscribe(val => {
@@ -56,7 +60,6 @@ describe("DerivedState", function () {
         state2.changes$().subscribe(val => {
             calls.push("state2:" + JSON.stringify(val));
         });
-
 
         input$.putValue(1);
         input$.putValue(undefined);
@@ -110,79 +113,79 @@ describe("DerivedState", function () {
         assert.isFalse(derived.hasValue());
     });
 
-    it("does not execute the inner transformer without subscribers", function () {
-        const input$ = input(1);
-        deriveRaw(input$, $ => $
-                .map(() => {
-                    throw Error();
-                }));
-    });
+    // it("does not execute the inner transformer without subscribers", function () {
+    //     const input$ = input(1);
+    //     deriveRaw(input$, $ => $
+    //             .map(() => {
+    //                 throw Error();
+    //             }));
+    // });
 
-    it("can be switched to be eager", function (done) {
-        const input$ = input(1);
-        derive(input$, $ => $.do(() => done())).eager();
-    });
+    // it("can be switched to be eager", function (done) {
+    //     const input$ = input(1);
+    //     derive(input$, $ => $.do(() => done())).eager();
+    // });
 
-    it("executes the inner transformer once an observer subscribes", function (done) {
-        const input$ = input(1);
-        const derived$ = deriveRaw(input$, $ => $
-                .map(() => {
-                    return "X";
-                }));
+    // it("executes the inner transformer once an observer subscribes", function (done) {
+    //     const input$ = input(1);
+    //     const derived$ = deriveRaw(input$, $ => $
+    //             .map(() => {
+    //                 return "X";
+    //             }));
+    //
+    //     derived$.changes$().subscribe(v => {
+    //         assert.equal(v, "X");
+    //         done();
+    //     });
+    // });
 
-        derived$.changes$().subscribe(v => {
-            assert.equal(v, "X");
-            done();
-        });
-    });
+    // it("does not execute the inner transformer once the last observer unsubscribes", function () {
+    //     const calls: any[] = [];
+    //     const input$ = input(1);
+    //     const derived$ = deriveRaw(input$, $ => $
+    //             .map(v => calls.push(v)));
+    //
+    //     let sub1 = derived$.changes$().subscribe();
+    //
+    //     input$.putValue(2);
+    //
+    //     let sub2 = derived$.changes$().subscribe();
+    //
+    //     input$.putValue(3);
+    //     sub2.unsubscribe();
+    //     input$.putValue(4);
+    //     sub1.unsubscribe();
+    //     input$.putValue(5);
+    //
+    //     assert.deepEqual(calls, [1, 2, 3, 4]);
+    // });
 
-    it("does not execute the inner transformer once the last observer unsubscribes", function () {
-        const calls: any[] = [];
-        const input$ = input(1);
-        const derived$ = deriveRaw(input$, $ => $
-                .map(v => calls.push(v)));
+    // it("value() only has a value if an observer is subscribed", function () {
+    //     const input$ = input(1);
+    //     const derived$ = deriveRaw(input$, $ => $
+    //             .map(() => {
+    //                 return "X";
+    //             }));
+    //
+    //     assert.isUndefined(derived$.value);
+    //
+    //     derived$.changes$().subscribe();
+    //     assert.equal(derived$.value, "X");
+    // });
 
-        let sub1 = derived$.changes$().subscribe();
-
-        input$.putValue(2);
-
-        let sub2 = derived$.changes$().subscribe();
-
-        input$.putValue(3);
-        sub2.unsubscribe();
-        input$.putValue(4);
-        sub1.unsubscribe();
-        input$.putValue(5);
-
-        assert.deepEqual(calls, [1, 2, 3, 4]);
-    });
-
-    it("value() only has a value if an observer is subscribed", function () {
-        const input$ = input(1);
-        const derived$ = deriveRaw(input$, $ => $
-                .map(() => {
-                    return "X";
-                }));
-
-        assert.isUndefined(derived$.value);
-
-        derived$.changes$().subscribe();
-        assert.equal(derived$.value, "X");
-    });
-
-    it("in a chain of DependentState, only an observer triggers the inner transformers", function () {
-        const calls: any[] = [];
-        const input$ = input(1);
-        const derived1$ = deriveRaw(input$, $ => $.map(() => calls.push(1)));
-        const derived2$ = deriveRaw(derived1$, $ => $.map(() => calls.push(2)));
-        const derived3$ = deriveRaw(derived2$, $ => $.map(() => calls.push(3)));
-
-        assert.deepEqual(calls, []);
-
-        derived3$.changes$().subscribe();
-
-        assert.deepEqual(calls, [1, 2, 3]);
-    });
+    // it("in a chain of DependentState, only an observer triggers the inner transformers", function () {
+    //     const calls: any[] = [];
+    //     const input$ = input(1);
+    //     const derived1$ = deriveRaw(input$, $ => $.map(() => calls.push(1)));
+    //     const derived2$ = deriveRaw(derived1$, $ => $.map(() => calls.push(2)));
+    //     const derived3$ = deriveRaw(derived2$, $ => $.map(() => calls.push(3)));
+    //
+    //     assert.deepEqual(calls, []);
+    //
+    //     derived3$.changes$().subscribe();
+    //
+    //     assert.deepEqual(calls, [1, 2, 3]);
+    // });
 
     it("can have an initial value", function () {
         const calls: any[] = [];

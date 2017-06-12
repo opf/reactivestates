@@ -27,42 +27,42 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
         this.defaultWhenInputHasNonValue = defaultWhenInputHasNonValue;
     }
 
-    public connect(): this {
-        if (this.getObserverCount() === 0) {
-            return this;
-        }
-
-        super.connect();
-        return this;
-    }
+    // public connect(): this {
+    //     if (this.getObserverCount() === 0) {
+    //         return this;
+    //     }
+    //
+    //     super.connect();
+    //     return this;
+    // }
 
     public getStateChain(): State<any, any>[] {
         return [...this.inputState.getStateChain(), this];
     }
 
-    public eager(): this {
-        this.changes$("eager mode").subscribe();
-        return this;
-    }
+    // public lazy(): this {
+    //     this.changes$("eager mode").subscribe();
+    //     return this;
+    // }
 
-    protected onObserverSubscribed() {
-        if (this.getObserverCount() === 1) {
-            this.connect();
-        }
-    }
-
-    protected onObserverUnsubscribed() {
-        if (this.getObserverCount() === 0) {
-            this.disconnect();
-        }
-    }
+    // protected onObserverSubscribed() {
+    //     if (this.getObserverCount() === 1) {
+    //         this.connect();
+    //     }
+    // }
+    //
+    // protected onObserverUnsubscribed() {
+    //     if (this.getObserverCount() === 0) {
+    //         this.disconnect();
+    //     }
+    // }
 }
 
 
 export function deriveRaw<IT, IX, OT>(state: State<IT, IX>,
                                       transformer: ($: Observable<IT | IX>, inputState: State<IT, IX>) => Observable<OT | undefined>): DerivedState<IT, IX, OT, undefined> {
 
-    const transformed: Observable<OT | undefined> = transformer(state.changes$(), state);
+    const transformed: Observable<OT | undefined> = transformer(state.outputStreamTrailing, state);
     const isNonValue = (val: OT | undefined): val is undefined => {
         return val === undefined;
     };
@@ -74,8 +74,12 @@ export function derive<IT, OT, IX = undefined>(state: State<IT, IX>,
                                                transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT|undefined>,
                                                defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
 
-    const values$: Observable<OT> = transformer(state.values$(), state);
-    const nonValues$: Observable<undefined> = state.nonValues$().map(nonValue => undefined);
+    const values$: Observable<OT> = transformer(
+            state.outputStreamTrailing.filter(v => !state.isNonValue(v)), state);
+
+    const nonValues$: Observable<undefined> =
+            state.outputStreamTrailing.filter(v => state.isNonValue(v)).map(nonValue => undefined);
+
     const source$: Observable<OT | undefined> = Observable.merge(nonValues$, values$);
     const isNonValue = (val: OT | undefined): val is undefined => {
         return val === undefined;

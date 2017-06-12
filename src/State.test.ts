@@ -51,6 +51,30 @@ describe("State", function () {
                 });
     });
 
+    it("mapOr", () => {
+        const dummy = new Subject<{ a: number }>();
+        const s1 = observableToState(dummy);
+
+        assert.equal(s1.mapOr(v => v.a, 1), 1);
+        dummy.next({a: 2});
+        assert.equal(s1.mapOr(v => v.a, 1), 2);
+    });
+
+    it("forEach", () => {
+        const dummy = new Subject<number>();
+        const s1 = observableToState(dummy);
+
+        const calls: number[] = [];
+        dummy.next(1);
+        dummy.next(2);
+        s1.forEach(v => calls.push(v));
+        dummy.next(3);
+        dummy.next(4);
+        dummy.next(5);
+
+        assert.deepEqual(calls, [2, 3, 4, 5]);
+    });
+
     it("the value 'undefined' clears the state", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
@@ -113,15 +137,15 @@ describe("State", function () {
     it("counts the number of observers", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
-        assert.equal(s1.getObserverCount(), 0);
+        assert.equal(s1.getSubscriberCount(), 0);
         const sub1 = s1.values$().subscribe(v => v);
-        assert.equal(s1.getObserverCount(), 1);
+        assert.equal(s1.getSubscriberCount(), 1);
         const sub2 = s1.values$().subscribe(v => v);
-        assert.equal(s1.getObserverCount(), 2);
+        assert.equal(s1.getSubscriberCount(), 2);
         sub1.unsubscribe();
-        assert.equal(s1.getObserverCount(), 1);
+        assert.equal(s1.getSubscriberCount(), 1);
         sub2.unsubscribe();
-        assert.equal(s1.getObserverCount(), 0);
+        assert.equal(s1.getSubscriberCount(), 0);
     });
 
     it("value / nonValue states over time", function () {
