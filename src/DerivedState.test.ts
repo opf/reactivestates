@@ -7,6 +7,7 @@ describe("DerivedState", function () {
         const calls: string[] = [];
 
         const input$ = input<number>();
+        input$.logEnabled = true;
 
         const derived = deriveRaw(
                 input$,

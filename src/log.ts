@@ -1,8 +1,15 @@
 import {State} from "./State";
 
+const cssSuccessStyle = [
+    "background: green",
+    "color: white",
+    "display: block",
+    "text-align: center"
+].join(";");
+
 let logger: (message: string) => void = s => {
     if (console.debug) {
-        console.debug(s);
+        console.debug("%c" + s, cssSuccessStyle);
     } else {
         console.log(s);
     }
