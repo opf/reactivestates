@@ -52,8 +52,8 @@ export abstract class Store<T> {
 
         fn(clone, 1);
 
-        console.log(JSON.stringify(this.currentData));
-        console.log(JSON.stringify(clone));
+        console.log("    old:", JSON.stringify(this.currentData));
+        console.log("    new:", JSON.stringify(clone));
 
         this.currentData = clone;
 
@@ -114,6 +114,14 @@ export class MyStore extends Store<Data> {
         super(new Data());
     }
 
+    actionClear() {
+        this.action(data => {
+            data.field1 = undefined as any;
+            data.field2 = undefined as any;
+            data.field3 = undefined as any;
+        });
+    }
+
     action1() {
         this.action(data => {
             data.field1 = 1;
@@ -122,7 +130,6 @@ export class MyStore extends Store<Data> {
             // data.field3 = data.field3;
             //
             data.field3 = [
-                ...data.field3,
                 3
             ];
         }, {
