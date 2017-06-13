@@ -2,7 +2,7 @@ import {State} from "./State";
 
 const cssSuccessStyle = [
     "background: #D1ECBA",
-    "color: white",
+    "color: black",
     "display: block",
     "text-align: center"
 ].join(";");
