@@ -1,7 +1,7 @@
 import {State} from "./State";
 
 const cssSuccessStyle = [
-    "background: green",
+    "background: D1ECBA",
     "color: white",
     "display: block",
     "text-align: center"
