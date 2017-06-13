@@ -29,7 +29,7 @@ export abstract class Store<T> {
     }
 
     protected action(fn: (data: T, bla: any) => void, options?: any) {
-        console.debug(("[action]"));
+        console.log(("[action]"));
 
         const cloneBack: any = _.clone(this.currentData);
         const clone: any = {};
