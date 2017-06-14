@@ -40,7 +40,7 @@ export function setLogger(loggerFn: typeof defaultLogger) {
 }
 
 export function logStateChange(state: State<any, any>, msg?: string) {
-    if (isLogEnabled() && state.name !== undefined) {
+    if (isLogEnabled() && !_.isNil(state.name)) {
         logger(state, msg);
     }
 }
