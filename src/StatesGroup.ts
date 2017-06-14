@@ -11,11 +11,19 @@ export class StatesGroup implements Injectable {
 
     protected members: State<any, any>[] | null = null;
 
-    enableLog(enable: boolean): this {
-        this.initializeMembers();
-        this.members!.forEach(m => m.logEnabled = enable);
-        return this;
+    protected autoInitMembers = true;
+
+    constructor() {
+        if (this.autoInitMembers) {
+            setTimeout(() => this.initializeMembers(), 0);
+        }
     }
+
+    // enableLog(enable: boolean): this {
+    //     this.initializeMembers();
+    //     this.members!.forEach(m => m.logEnabled = enable);
+    //     return this;
+    // }
 
     connectAll(): this {
         this.initializeMembers();

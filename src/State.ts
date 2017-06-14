@@ -11,7 +11,7 @@ export class State<T, X = undefined> {
 
     public name: string|null = null;
 
-    public logEnabled = false;
+    public logEnabled = true;
 
     public pristine = true;
 
@@ -141,10 +141,6 @@ export class State<T, X = undefined> {
         return this.getSubscriberCount() > 0;
     }
 
-    public getStateChain(): State<any, any>[] {
-        return [this];
-    }
-
     protected onObserverSubscribed(): void {
     }
 
@@ -152,7 +148,7 @@ export class State<T, X = undefined> {
     }
 
     protected log() {
-        logStateChange(this, this.getStateChain());
+        logStateChange(this);
     }
 
     protected setInnerValue(val: T | X): void {

@@ -36,10 +36,6 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
     //     return this;
     // }
 
-    public getStateChain(): State<any, any>[] {
-        return [...this.inputState.getStateChain(), this];
-    }
-
     // public lazy(): this {
     //     this.changes$("eager mode").subscribe();
     //     return this;

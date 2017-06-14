@@ -15,10 +15,14 @@ describe("log", function () {
             name = "group1";
             input$ = input<number>();
             state2 = derive(this.input$, $ => $.map(v => v + 1000));
+
+            constructor() {
+                super();
+                this.initializeMembers();
+            }
         }
 
         const states = new States();
-        states.enableLog(true);
         states.state2.changes$().subscribe();
 
         let logged = "";

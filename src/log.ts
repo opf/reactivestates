@@ -12,7 +12,7 @@ let logEnabled = false;
 
 let lastLogMessage: number | undefined = undefined;
 
-export function defaultLogger(state: State<any, any>, states: State<any, any>[], msg?: string) {
+export function defaultLogger(state: State<any, any>, msg?: string) {
     if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
         console.log("[RS] -------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
     }
@@ -39,9 +39,9 @@ export function setLogger(loggerFn: typeof defaultLogger) {
     logger = loggerFn;
 }
 
-export function logStateChange(state: State<any, any>, states: State<any, any>[], msg?: string) {
+export function logStateChange(state: State<any, any>, msg?: string) {
     if (isLogEnabled() && state.name !== undefined) {
-        logger(state, states, msg);
+        logger(state, msg);
     }
 }
 
