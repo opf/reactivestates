@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import {cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleRedOnWhite, isLogEnabled} from "./log";
+import {cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleRedOnWhite, isLogEnabled, logTimePeriodDivider} from "./log";
 
 let logFn: (event: LogEvent) => void = defaultLog;
 
@@ -19,6 +19,7 @@ export function defaultLog(event: LogEvent) {
             console.log("    [" + changeType + "] " + fieldName + " = " + value);
         });
     } else {
+        logTimePeriodDivider();
         console.group(event.action);
         event.changes.forEach(([changeType, fieldName, value]) => {
             if (changeType === "added") {

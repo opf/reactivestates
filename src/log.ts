@@ -12,10 +12,16 @@ let logEnabled = false;
 
 let lastLogMessage: number | undefined = undefined;
 
-export function defaultLogger(state: State<any, any>, msg?: string) {
-    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
-        console.log("[RS] -------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
+export function logTimePeriodDivider() {
+    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1500) {
+        const dur = Math.round((Date.now() - lastLogMessage) / 1000);
+        console.log("[RS] -------------------------------------------------------------------------- " + dur + "s");
     }
+    lastLogMessage = Date.now();
+}
+
+export function defaultLogger(state: State<any, any>, msg?: string) {
+    logTimePeriodDivider();
 
     const isBrowser: boolean = _.hasIn(console, "group");
     if (!isBrowser) {
@@ -29,8 +35,6 @@ export function defaultLogger(state: State<any, any>, msg?: string) {
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleRedOnWhite, value);
         }
     }
-
-    lastLogMessage = Date.now();
 }
 
 let logger = defaultLogger;
