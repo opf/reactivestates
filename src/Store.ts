@@ -6,9 +6,14 @@ import {LogEvent, logStoreEvent} from "./StoreLog";
 
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
+export interface ActionOptions<T> {
+    deepClone?: boolean;
+    afterAction?: (store: Store<T>, data: T, touchedFields: Set<string>, newFields: Set<string>) => void;
+}
+
 export interface SelectEvent<T> {
     data: T;
-    fields: (keyof T)[];
+    fields: Set<keyof T>;
 }
 
 function createInputState(name: string) {
@@ -24,7 +29,7 @@ export abstract class Store<T> {
 
     private currentData: T;
 
-    private actionCompleted = new Subject<string[]>();
+    private actionCompleted = new Subject<Set<keyof T>>();
 
     constructor(data: T) {
         this.currentData = data;
@@ -40,8 +45,9 @@ export abstract class Store<T> {
         this.states = states;
     }
 
-    protected action(name: string, fn: (data: T, bla: any) => void, options?: any) {
-        const touchedFields: string[] = [];
+    protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
+        options = options ? options : {};
+        const touchedFields = new Set<string>();
 
         const clone: any = {};
         const cloneBack: any = _.clone(this.currentData);
@@ -53,7 +59,7 @@ export abstract class Store<T> {
                         enumerable: true,
                         get: () => cloneBack[key],
                         set: (val: any) => {
-                            touchedFields.push(key);
+                            touchedFields.add(key);
                             cloneBack[key] = val;
                         }
                     }
@@ -65,40 +71,45 @@ export abstract class Store<T> {
         const logEvent = new LogEvent(name, []);
 
         // check for new fields
-        const newFields = _.difference(_.keysIn(clone), _.keysIn(cloneBack));
-        newFields.forEach(field => {
-            this.states[field] = createInputState(field);
-            let value = clone[field];
-            cloneBack[field] = value;
-            touchedFields.push(field);
+        const newFields = new Set<string>(_.difference(_.keysIn(clone), _.keysIn(cloneBack)));
+        newFields.forEach(fieldName => {
+            this.states[fieldName] = createInputState(fieldName);
+            let value = clone[fieldName];
+            cloneBack[fieldName] = value;
+            touchedFields.add(fieldName);
 
-            logEvent.changes.push(["added", field, value]);
+            logEvent.changes.push(["added", fieldName, value]);
         });
 
         this.currentData = cloneBack;
-
-        // console.log("    new fields       :", JSON.stringify(newFields));
-        // console.log("    clone            :", JSON.stringify(clone));
-        // console.log("    cloneBack        :", JSON.stringify(cloneBack));
-        // console.log("    touchedFields    :", JSON.stringify(touchedFields));
-        // console.log("    currentData      :", JSON.stringify(this.currentData));
+        const allRelevantFields = new Set<string>();
 
         // transfer field values to states
-        touchedFields.forEach(f => {
-            let value = clone[f];
-            this.states[f].putValue(value);
+        touchedFields.forEach(fieldName => {
+            allRelevantFields.add(fieldName);
+            let value = cloneBack[fieldName];
+            this.states[fieldName].putValue(value);
 
-            if (!_.includes(newFields, f)) {
+            if (newFields.has(fieldName)) {
+                // this touched field was new
+                touchedFields.delete(fieldName);
+            } else {
+                // this touched field existed before
                 if (_.isNil(value)) {
-                    logEvent.changes.push(["removed", f, value]);
+                    logEvent.changes.push(["removed", fieldName, value]);
                 } else {
-                    logEvent.changes.push(["changed", f, value]);
+                    logEvent.changes.push(["changed", fieldName, value]);
                 }
             }
         });
 
         logStoreEvent(logEvent);
-        this.actionCompleted.next(touchedFields);
+
+        if (options.afterAction) {
+            options.afterAction(this, cloneBack, touchedFields, newFields);
+        }
+
+        this.actionCompleted.next(allRelevantFields as any);
     }
 
     get data(): T {
@@ -108,7 +119,7 @@ export abstract class Store<T> {
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
         let futureChanges = this.actionCompleted
                 .filter(touchedFields => {
-                    return _.intersection(touchedFields, fields).length > 0;
+                    return _.some(fields, f => touchedFields.has(f));
                 });
 
         let alreadyHasAllSelectedFields = _.every(fields, field => {
@@ -123,14 +134,14 @@ export abstract class Store<T> {
         });
 
         if (alreadyHasAllSelectedFields) {
-            futureChanges = futureChanges.startWith(fields);
+            futureChanges = futureChanges.startWith(new Set(fields));
         }
 
         return futureChanges
                 .map(fields => {
                     return {
                         data: this.data,
-                        fields: fields
+                        fields: new Set(fields)
                     };
                 });
     }
@@ -140,7 +151,7 @@ export abstract class Store<T> {
         const keys: string[] = _.keysIn(data);
         const keysWithValues: string[] = keys.filter(key => _.get(data, key) !== undefined);
         return this.actionCompleted
-                .startWith(keysWithValues)
+                .startWith(new Set(keysWithValues))
                 .map(fields => {
                     return {
                         data: this.data,
@@ -150,28 +161,3 @@ export abstract class Store<T> {
     }
 
 }
-
-// export class Data {
-//     field1: number|undefined ;
-//     field3: number[];
-// }
-//
-// export class MyStore extends Store<Data> {
-//
-//     constructor() {
-//         super(new Data());
-//     }
-//
-//     action1() {
-//         this.action(data => {
-//             data.field1 = undefined;
-//             data.field3 = [1, 2, 3];
-//         }, {
-//             deepClone: true
-//         });
-//     }
-//
-//
-// }
-
-

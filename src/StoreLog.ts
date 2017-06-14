@@ -23,13 +23,12 @@ export function defaultLog(event: LogEvent) {
         console.group(event.action);
         event.changes.forEach(([changeType, fieldName, value]) => {
             if (changeType === "added") {
-                console.log("%c" + fieldName + " %o", cssStyleBlueOnWhite, value);
-            } else if (changeType === "changed") {
                 console.log("%c" + fieldName + " %o", cssStyleGreenOnWhite, value);
+            } else if (changeType === "changed") {
+                console.log("%c" + fieldName + " %o", cssStyleBlueOnWhite, value);
             } else if (changeType === "removed") {
                 console.log("%c" + fieldName, cssStyleRedOnWhite);
             }
-
         });
         console.groupEnd();
     }

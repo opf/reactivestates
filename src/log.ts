@@ -15,19 +15,17 @@ let lastLogMessage: number | undefined = undefined;
 export function logTimePeriodDivider() {
     if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1500) {
         const dur = Math.round((Date.now() - lastLogMessage) / 1000);
-        console.log("[RS] -------------------------------------------------------------------------- " + dur + "s");
+        console.log("[RS] " + _.repeat("-", 100) + " " + dur + "s");
     }
     lastLogMessage = Date.now();
 }
 
 export function defaultLogger(state: State<any, any>, msg?: string) {
-    logTimePeriodDivider();
-
     const isBrowser: boolean = _.hasIn(console, "group");
     if (!isBrowser) {
         console.log(`[RS] ${state.name} {o=${state.getSubscriberCount()}} = ${state.value}`);
-
     } else {
+        logTimePeriodDivider();
         const value = state.value;
         if (value !== undefined) {
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleGreenOnWhite, value);
