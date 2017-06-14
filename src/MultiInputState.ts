@@ -53,6 +53,9 @@ export class MultiInputState<T> extends State<Cache<T>, undefined> {
     get(id: string): InputState<T> {
         if (this.value![id] === undefined) {
             const newState = input<T>();
+            if (this.name) {
+                newState.name = this.name + "[" + id + "]";
+            }
             this.value![id] = newState;
             newState.changes$()
                     .takeUntil(this.observeRemove().filter(val => val === id))
