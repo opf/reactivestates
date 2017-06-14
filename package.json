@@ -1,6 +1,6 @@
 {
   "name": "reactivestates",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
