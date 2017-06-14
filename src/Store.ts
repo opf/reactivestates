@@ -11,6 +11,13 @@ export interface SelectEvent<T> {
     fields: (keyof T)[];
 }
 
+function createInputState(name: string) {
+    const is = input<any>();
+    is.name = name;
+    is.logEnabled = false;
+    return is;
+}
+
 export abstract class Store<T> {
 
     readonly states: StateMembers<T>;
@@ -24,11 +31,10 @@ export abstract class Store<T> {
 
         const states: any = {};
         _.forIn(this.currentData, (value: any, key: string) => {
-            let inputState = input<any>();
+            let inputState = createInputState(key);
             if (value !== undefined) {
                 inputState.putValue(value);
             }
-            inputState.name = key;
             states[key] = inputState;
         });
         this.states = states;
@@ -61,7 +67,7 @@ export abstract class Store<T> {
         // check for new fields
         const newFields = _.difference(_.keysIn(clone), _.keysIn(cloneBack));
         newFields.forEach(field => {
-            this.states[field] = input<any>();
+            this.states[field] = createInputState(field);
             let value = clone[field];
             cloneBack[field] = value;
             touchedFields.push(field);
