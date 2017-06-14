@@ -26,7 +26,6 @@ export function defaultLog(event: LogEvent) {
     } else {
         console.group(event.action);
         event.changes.forEach(([changeType, fieldName, value]) => {
-            console.log("    [" + changeType + "] " + fieldName);
             if (changeType === "added") {
                 console.log("%c" + fieldName + " %o", cssStyleFieldAdded, value);
             } else if (changeType === "changed") {
