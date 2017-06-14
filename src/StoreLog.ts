@@ -19,7 +19,7 @@ export function defaultLog(event: LogEvent) {
             console.log("    [" + changeType + "] " + fieldName + " = " + value);
         });
     } else {
-        console.groupCollapsed(event.action);
+        console.group(event.action);
         event.changes.forEach(([changeType, fieldName, value]) => {
             if (changeType === "added") {
                 console.log("%c" + fieldName + " %o", cssStyleBlueOnWhite, value);
