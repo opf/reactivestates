@@ -5,7 +5,7 @@ export const cssStyleBlackOnLightblue = ["background: #e1edff", "color: black"].
 export const cssStyleGreyOnWhite = ["background: white", "color: #5b5b5b"].join(";");
 export const cssStyleBlueOnWhite = ["background: white", "color: #0003d5"].join(";");
 export const cssStyleGreenOnWhite = ["background: white", "color: #00830f"].join(";");
-export const cssStyleRedOnWhite = ["background: white", "color: #5a0001"].join(";");
+export const cssStyleRedOnWhite = ["background: white", "color: #9d0002"].join(";");
 
 
 let logEnabled = false;
