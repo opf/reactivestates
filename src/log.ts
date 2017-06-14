@@ -1,45 +1,55 @@
+import * as _ from "lodash";
 import {State} from "./State";
 
-const cssSuccessStyle = [
-    "background: #D1ECBA",
-    "color: black",
-    "display: block",
-    "text-align: center"
-].join(";");
+export const cssStyleBlackOnLightblue = ["background: #e1edff", "color: black"].join(";");
+export const cssStyleGreyOnWhite = ["background: white", "color: #5b5b5b"].join(";");
+export const cssStyleBlueOnWhite = ["background: white", "color: #0003d5"].join(";");
+export const cssStyleGreenOnWhite = ["background: white", "color: #00830f"].join(";");
+export const cssStyleRedOnWhite = ["background: white", "color: #5a0001"].join(";");
 
-let logger: (message: string) => void = s => {
-    if (console.debug) {
-        console.debug("%c" + s, cssSuccessStyle);
-    } else {
-        console.log(s);
-    }
-};
+
+let logEnabled = false;
 
 let lastLogMessage: number | undefined = undefined;
 
-export function setLogger(loggerFn: (message: string) => void) {
+export function defaultLogger(state: State<any, any>, states: State<any, any>[], msg?: string) {
+    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
+        console.log("[RS] -------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
+    }
+
+    const isBrowser: boolean = _.hasIn(console, "group");
+    if (!isBrowser) {
+        console.log(`[RS] ${state.name} {o=${state.getSubscriberCount()}} = ${state.value}`);
+
+    } else {
+        const value = state.value;
+        if (value !== undefined) {
+            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}}`, cssStyleGreenOnWhite);
+        } else {
+            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}}`, cssStyleRedOnWhite);
+        }
+    }
+
+    lastLogMessage = Date.now();
+}
+
+let logger = defaultLogger;
+
+export function setLogger(loggerFn: typeof defaultLogger) {
     logger = loggerFn;
 }
 
-function getValueString(value: any) {
-    let stringify = "undefined";
-    if (value !== undefined) {
-        stringify = value.toString();
-        stringify = stringify.length > 50 ? stringify.substr(0, 50) + "..." : stringify;
+export function logStateChange(state: State<any, any>, states: State<any, any>[], msg?: string) {
+    if (isLogEnabled() && state.name !== undefined) {
+        logger(state, states, msg);
     }
-    return stringify;
 }
 
-export function logStateChange(state: State<any, any>, states: State<any, any>[], value: any, msg?: string) {
-    if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1000) {
-        logger("[RS] ------------------------------------------------------------------------------- " + (Date.now() - lastLogMessage) + "ms");
-    }
 
-    const path = states.map(s => `${s.name}`).join(" | ");
-    const valueString = getValueString(value);
-    const mesgs = msg !== undefined ? "// " + msg + " " : "";
+export function enableReactiveStatesLogging() {
+    logEnabled = true;
+}
 
-    logger(`[RS] ${path} = ${valueString} ${mesgs}     {o=${state.getSubscriberCount()}}`);
-
-    lastLogMessage = Date.now();
+export function isLogEnabled() {
+    return logEnabled;
 }

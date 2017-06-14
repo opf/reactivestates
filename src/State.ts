@@ -3,15 +3,13 @@ import {Observer} from "rxjs/Observer";
 import {Subject} from "rxjs/Subject";
 import {logStateChange} from "./log";
 
-let unnamedStateCounter = 0;
-
 export type IsNonValueFn<T, X> = (x: T | X) => x is X;
 export type AfterConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
 export type AfterDisConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
 
 export class State<T, X = undefined> {
 
-    public name = "unnamed-state-" + unnamedStateCounter++;
+    public name: string|null = null;
 
     public logEnabled = false;
 
@@ -154,7 +152,7 @@ export class State<T, X = undefined> {
     }
 
     protected log() {
-        logStateChange(this, this.getStateChain(), this.stateValue);
+        logStateChange(this, this.getStateChain());
     }
 
     protected setInnerValue(val: T | X): void {
