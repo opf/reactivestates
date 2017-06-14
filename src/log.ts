@@ -24,9 +24,9 @@ export function defaultLogger(state: State<any, any>, states: State<any, any>[],
     } else {
         const value = state.value;
         if (value !== undefined) {
-            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}}`, cssStyleGreenOnWhite);
+            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %0`, cssStyleGreenOnWhite, value);
         } else {
-            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}}`, cssStyleRedOnWhite);
+            console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %0`, cssStyleRedOnWhite, value);
         }
     }
 
