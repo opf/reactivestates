@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
-import "zone.js";
+// import "zone.js";
 import {input, InputState} from "./InputState";
 import {LogEvent, logStoreEvent} from "./StoreLog";
 
@@ -24,14 +24,25 @@ function createInputState(name: string) {
     return is;
 }
 
-const ZoneKeyData = "ReactiveStatesStoreData";
-const ZoneKeyMethodName = "ReactiveStatesStoreMethodName";
+function getCallerInfo(stack: string|undefined) {
+    if (stack === undefined) {
+        return "<unkown>";
+    }
+
+    const lines = stack.split("\n");
+    return lines[2].trim();
+}
+
+// const ZoneKeyData = "ReactiveStatesStoreData";
+// const ZoneKeyMethodName = "ReactiveStatesStoreMethodName";
 
 export abstract class Store<T> {
 
     readonly states: StateMembers<T>;
 
     private currentData: T;
+
+    private transientDataInAction: T;
 
     // private dataThreadLocal: T | null = null;
 
@@ -50,58 +61,63 @@ export abstract class Store<T> {
         });
         this.states = states;
 
-        this.wrapMethodsInZones();
+        // this.wrapMethodsInZones();
     }
 
-    private wrapMethodsInZones() {
-        const functions = _.functions(Object.getPrototypeOf(this));
-        const self: any = this;
-        functions.forEach(functionName => {
-            const original: any = _.get(this, functionName);
-            _.set(this, functionName, function () {
-                const props: any = {};
-                props[ZoneKeyMethodName] = functionName;
-                const fnZone = Zone.current.fork({name: functionName, properties: props});
-                fnZone.run(original, self, arguments as any);
-            });
-        });
-    }
+    // private wrapMethodsInZones() {
+    //     const functions = _.functions(Object.getPrototypeOf(this));
+    //     const self: any = this;
+    //     functions.forEach(functionName => {
+    //         const original: any = _.get(this, functionName);
+    //         _.set(this, functionName, function () {
+    //             const props: any = {};
+    //             props[ZoneKeyMethodName] = functionName;
+    //             const fnZone = Zone.current.fork({name: functionName, properties: props});
+    //             fnZone.run(original, self, arguments as any);
+    //         });
+    //     });
+    // }
 
     protected action(fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
+
         options = options ? options : {};
 
-        const parentZoneData: any = this.data;
-        const clone: any = _.clone(parentZoneData);
-        const properties: any = {};
-        properties[ZoneKeyData] = clone;
-        let childZone = Zone.current.fork({
-            name: "action",
-            properties
-        });
-        childZone.run(fn, this, [clone]);
-        // this.currentData = clone;
+        const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
+        const innerData: any = _.clone(outerData);
+        this.transientDataInAction = innerData;
+        // const properties: any = {};
+        // properties[ZoneKeyData] = innerData;
+        // let childZone = Zone.current.fork({
+        //     name: "action",
+        //     properties
+        // });
+        // childZone.run(fn, this, [innerData]);
+        fn.apply(this, [innerData]);
+        // this.currentData = innerData;
+        this.transientDataInAction = outerData;
 
         const newFields = new Set<string>();
         const changedFields = new Set<string>();
         const newAndChangedFields = new Set<string>();
 
         // Get method and action name for logging
-        let methodName = Zone.current.get(ZoneKeyMethodName);
-        methodName = methodName === undefined ? "<unnamed>" : methodName;
+        const caller = getCallerInfo(new Error().stack);
         let txName = options.name;
-        txName = txName !== undefined ? " - " + txName : "";
-        const logEvent = new LogEvent(methodName + txName, []);
+        txName = txName !== undefined ? " / " + txName : "";
+
+
+        const logEvent = new LogEvent(caller + txName, []);
 
         // Check changes
-        const dataInCurrentZone: any = this.data;
-        _.keysIn(clone).forEach(fieldName => {
-            const value = clone[fieldName];
-            if (_.hasIn(parentZoneData, fieldName)) {
-                const valueInOrigin = parentZoneData[fieldName];
+        // const dataInCurrentZone: any = this.data;
+        _.keysIn(innerData).forEach(fieldName => {
+            const value = innerData[fieldName];
+            if (_.hasIn(outerData, fieldName)) {
+                const valueInOrigin = outerData[fieldName];
                 if (!_.eq(value, valueInOrigin)) {
                     // field changed
                     this.states[fieldName].putValue(value);
-                    dataInCurrentZone[fieldName] = value;
+                    outerData[fieldName] = value;
                     changedFields.add(fieldName);
                     newAndChangedFields.add(fieldName);
 
@@ -113,7 +129,7 @@ export abstract class Store<T> {
                 }
             } else {
                 // field was added
-                dataInCurrentZone[fieldName] = value;
+                outerData[fieldName] = value;
                 newFields.add(fieldName);
                 newAndChangedFields.add(fieldName);
                 this.states[fieldName] = createInputState(fieldName);
@@ -126,12 +142,13 @@ export abstract class Store<T> {
         this.actionCompleted.next(newAndChangedFields as any);
 
         if (options.afterAction) {
-            options.afterAction(this, clone, changedFields, newFields);
+            options.afterAction(this, innerData, changedFields, newFields);
         }
     }
 
     get data(): T {
-        let data = Zone.current.get(ZoneKeyData);
+        let data = undefined;
+        // let data = Zone.current.get(ZoneKeyData);
         return data === undefined ? this.currentData : data;
     }
 

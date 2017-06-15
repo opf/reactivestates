@@ -1,7 +1,6 @@
 import {Store} from "./Store";
 import {enableReactiveStatesLogging} from "./log";
 
-enableReactiveStatesLogging();
 describe("Store", function () {
 
     it("an action can create a new field", function () {
@@ -56,11 +55,10 @@ describe("Store", function () {
     it("access to this.data is isolated inside an action", function (done) {
         class S extends Store<{ field1?: number }> {
             action1() {
-                const originalData = this.data;
-                this.action(() => {
-                    this.data.field1 = 1;
-                    assert.equal(originalData.field1, 0);
-                    assert.equal(this.data.field1, 1);
+                this.action(data => {
+                    data.field1 = 1;
+                    assert.equal(this.data.field1, 0);
+                    assert.equal(data.field1, 1);
                     done();
                 });
             }
@@ -106,6 +104,7 @@ describe("Store", function () {
     });
 
     it("nested actions can be asynchronous", function (done) {
+        enableReactiveStatesLogging();
         const calls: any[] = [];
         class S extends Store<{ field1?: number }> {
             action1() {
