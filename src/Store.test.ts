@@ -1,12 +1,13 @@
 import {Store} from "./Store";
+import {enableReactiveStatesLogging} from "./log";
 
-
+enableReactiveStatesLogging();
 describe("Store", function () {
 
     it("an action can create a new field", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = 1;
                 });
             }
@@ -22,7 +23,7 @@ describe("Store", function () {
     it("an action can change a field", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = 1;
                 });
             }
@@ -39,7 +40,7 @@ describe("Store", function () {
     it("an action can set a field to undefined", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = undefined;
                 });
             }
@@ -56,7 +57,7 @@ describe("Store", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
                 const originalData = this.data;
-                this.action("action1", () => {
+                this.action(() => {
                     this.data.field1 = 1;
                     assert.equal(originalData.field1, 0);
                     assert.equal(this.data.field1, 1);
@@ -71,9 +72,9 @@ describe("Store", function () {
     it("nested actions can see dirty outer changes", function (done) {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = 1;
-                    this.action("action2", data => {
+                    this.action(data => {
                         assert.equal(data.field1, 1);
                         done();
                     });
@@ -87,10 +88,10 @@ describe("Store", function () {
     it("changes done by nested actions will afterwards be visible in outer actions", function (done) {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = 1;
                     assert.equal(data.field1, 1);
-                    this.action("action2", data => {
+                    this.action(data => {
                         assert.equal(data.field1, 1);
                         data.field1 = 2;
                         assert.equal(data.field1, 2);
@@ -108,11 +109,11 @@ describe("Store", function () {
         const calls: any[] = [];
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("outer", data => {
+                this.action(data => {
                     // start inner asynchronous action
                     setTimeout(() => {
                         // alter data in inner action
-                        this.action("inner", data => {
+                        this.action(data => {
                             data.field1 = 2;
                         }, {
                             afterAction: () => {
@@ -124,7 +125,7 @@ describe("Store", function () {
 
                     // alter data in outer action
                     data.field1 = 1;
-                });
+                }, {name: "outer"});
             }
         }
         const store = new S({field1: 0});
@@ -136,7 +137,7 @@ describe("Store", function () {
     it("callback afterAction", function (done) {
         class S extends Store<{ field1?: number, field2?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action(data => {
                     data.field1 = 1;
                     data.field2 = 5;
                 }, {

@@ -8,7 +8,7 @@ import {LogEvent, logStoreEvent} from "./StoreLog";
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
 export interface ActionOptions<T> {
-    deepClone?: boolean;
+    name?: string;
     afterAction?: (store: Store<T>, data: T, touchedFields: Set<string>, newFields: Set<string>) => void;
 }
 
@@ -25,6 +25,7 @@ function createInputState(name: string) {
 }
 
 const ZoneKeyData = "ReactiveStatesStoreData";
+const ZoneKeyMethodName = "ReactiveStatesStoreMethodName";
 
 export abstract class Store<T> {
 
@@ -49,11 +50,24 @@ export abstract class Store<T> {
         });
         this.states = states;
 
-        // let functions = _.functions(Object.getPrototypeOf(this));
-        // console.log("functions", functions);
+        this.wrapMethodsInZones();
     }
 
-    protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
+    private wrapMethodsInZones() {
+        const functions = _.functions(Object.getPrototypeOf(this));
+        const self: any = this;
+        functions.forEach(functionName => {
+            const original: any = _.get(this, functionName);
+            _.set(this, functionName, function () {
+                const props: any = {};
+                props[ZoneKeyMethodName] = functionName;
+                const fnZone = Zone.current.fork({name: functionName, properties: props});
+                fnZone.run(original, self, arguments as any);
+            });
+        });
+    }
+
+    protected action(fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
         options = options ? options : {};
 
         const parentZoneData: any = this.data;
@@ -61,7 +75,7 @@ export abstract class Store<T> {
         const properties: any = {};
         properties[ZoneKeyData] = clone;
         let childZone = Zone.current.fork({
-            name: name,
+            name: "action",
             properties
         });
         childZone.run(fn, this, [clone]);
@@ -70,7 +84,13 @@ export abstract class Store<T> {
         const newFields = new Set<string>();
         const changedFields = new Set<string>();
         const newAndChangedFields = new Set<string>();
-        const logEvent = new LogEvent(name, []);
+
+        // Get method and action name for logging
+        let methodName = Zone.current.get(ZoneKeyMethodName);
+        methodName = methodName === undefined ? "<unnamed>" : methodName;
+        let txName = options.name;
+        txName = txName !== undefined ? " - " + txName : "";
+        const logEvent = new LogEvent(methodName + txName, []);
 
         // Check changes
         const dataInCurrentZone: any = this.data;

@@ -6,7 +6,7 @@ let logFn: (event: LogEvent) => void = defaultLog;
 export type FieldChangeType = "added" | "changed" | "removed";
 
 export class LogEvent {
-    constructor(public action: string,
+    constructor(public name: string,
                 public changes: [FieldChangeType, string, any][]) {
     }
 }
@@ -14,13 +14,13 @@ export class LogEvent {
 export function defaultLog(event: LogEvent) {
     const isBrowser: boolean = _.hasIn(console, "group");
     if (!isBrowser) {
-        console.log(event.action);
+        console.log(event.name);
         event.changes.forEach(([changeType, fieldName, value]) => {
             console.log("    [" + changeType + "] " + fieldName + " = " + value);
         });
     } else {
         logTimePeriodDivider();
-        console.group(event.action);
+        console.group(event.name);
         event.changes.forEach(([changeType, fieldName, value]) => {
             if (changeType === "added") {
                 console.log("%c" + fieldName + " %o", cssStyleGreenOnWhite, value);
