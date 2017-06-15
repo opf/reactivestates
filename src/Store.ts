@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
+import "zone.js";
 import {input, InputState} from "./InputState";
 import {LogEvent, logStoreEvent} from "./StoreLog";
 
@@ -23,13 +24,15 @@ function createInputState(name: string) {
     return is;
 }
 
+const ZoneKeyData = "ReactiveStatesStoreData";
+
 export abstract class Store<T> {
 
     readonly states: StateMembers<T>;
 
     private currentData: T;
 
-    private dataThreadLocal: T|null = null;
+    // private dataThreadLocal: T | null = null;
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
@@ -53,12 +56,16 @@ export abstract class Store<T> {
     protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
         options = options ? options : {};
 
-        const origin: any = this.dataThreadLocal !== null ? this.dataThreadLocal : this.currentData;
-        const clone: any = _.clone(origin);
-        this.dataThreadLocal = clone;
-        fn(clone, 1);
-        this.dataThreadLocal = origin;
-        this.currentData = clone;
+        const parentZoneData: any = this.data;
+        const clone: any = _.clone(parentZoneData);
+        const properties: any = {};
+        properties[ZoneKeyData] = clone;
+        let childZone = Zone.current.fork({
+            name: name,
+            properties
+        });
+        childZone.run(fn, this, [clone]);
+        // this.currentData = clone;
 
         const newFields = new Set<string>();
         const changedFields = new Set<string>();
@@ -66,13 +73,15 @@ export abstract class Store<T> {
         const logEvent = new LogEvent(name, []);
 
         // Check changes
+        const dataInCurrentZone: any = this.data;
         _.keysIn(clone).forEach(fieldName => {
             const value = clone[fieldName];
-            if (_.hasIn(origin, fieldName)) {
-                const valueInOrigin = origin[fieldName];
+            if (_.hasIn(parentZoneData, fieldName)) {
+                const valueInOrigin = parentZoneData[fieldName];
                 if (!_.eq(value, valueInOrigin)) {
                     // field changed
                     this.states[fieldName].putValue(value);
+                    dataInCurrentZone[fieldName] = value;
                     changedFields.add(fieldName);
                     newAndChangedFields.add(fieldName);
 
@@ -84,6 +93,7 @@ export abstract class Store<T> {
                 }
             } else {
                 // field was added
+                dataInCurrentZone[fieldName] = value;
                 newFields.add(fieldName);
                 newAndChangedFields.add(fieldName);
                 this.states[fieldName] = createInputState(fieldName);
@@ -101,7 +111,8 @@ export abstract class Store<T> {
     }
 
     get data(): T {
-        return this.currentData;
+        let data = Zone.current.get(ZoneKeyData);
+        return data === undefined ? this.currentData : data;
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {

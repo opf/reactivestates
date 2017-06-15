@@ -1,5 +1,4 @@
 import {Store} from "./Store";
-import {enableReactiveStatesLogging} from "./log";
 
 
 describe("Store", function () {
@@ -53,45 +52,20 @@ describe("Store", function () {
         assert.deepEqual(calls, [1, undefined]);
     });
 
-    it("callback afterAction", function (done) {
-        class S extends Store<{ field1?: number, field2?: number }> {
-            action1() {
-                this.action("action1", data => {
-                    data.field1 = 1;
-                    data.field2 = 5;
-                }, {
-                    afterAction: (store, data, changedFields, newFields) => {
-                        assert.equal(data.field1, 1);
-                        assert.equal(data.field2, 5);
-                        assert.deepEqual(Array.from(changedFields), ["field1"]);
-                        assert.deepEqual(Array.from(newFields), ["field2"]);
-                        done();
-                    }
-                });
-            }
-        }
-        const store = new S({field1: 0});
-        store.action1();
-    });
-
-
-    it("actions can be nested", function () {
-        const calls: any[] = [];
+    it("access to this.data is isolated inside an action", function (done) {
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
-                    data.field1 = 1;
-                    this.action("action2", data => {
-                        data.field1 = 2;
-                    });
-                    data.field1 = 3;
+                const originalData = this.data;
+                this.action("action1", () => {
+                    this.data.field1 = 1;
+                    assert.equal(originalData.field1, 0);
+                    assert.equal(this.data.field1, 1);
+                    done();
                 });
             }
         }
         const store = new S({field1: 0});
-        store.select("field1").subscribe(s => calls.push(s.data.field1));
         store.action1();
-        assert.deepEqual(calls, [0, 2, 3]);
     });
 
     it("nested actions can see dirty outer changes", function (done) {
@@ -103,6 +77,26 @@ describe("Store", function () {
                         assert.equal(data.field1, 1);
                         done();
                     });
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        store.action1();
+    });
+
+    it("changes done by nested actions will afterwards be visible in outer actions", function (done) {
+        class S extends Store<{ field1?: number }> {
+            action1() {
+                this.action("action1", data => {
+                    data.field1 = 1;
+                    assert.equal(data.field1, 1);
+                    this.action("action2", data => {
+                        assert.equal(data.field1, 1);
+                        data.field1 = 2;
+                        assert.equal(data.field1, 2);
+                    });
+                    assert.equal(data.field1, 2);
+                    done();
                 });
             }
         }
@@ -135,6 +129,28 @@ describe("Store", function () {
         }
         const store = new S({field1: 0});
         store.select("field1").subscribe(s => calls.push(s.data.field1));
+        store.action1();
+    });
+
+
+    it("callback afterAction", function (done) {
+        class S extends Store<{ field1?: number, field2?: number }> {
+            action1() {
+                this.action("action1", data => {
+                    data.field1 = 1;
+                    data.field2 = 5;
+                }, {
+                    afterAction: (store, data, changedFields, newFields) => {
+                        assert.equal(data.field1, 1);
+                        assert.equal(data.field2, 5);
+                        assert.deepEqual(Array.from(changedFields), ["field1"]);
+                        assert.deepEqual(Array.from(newFields), ["field2"]);
+                        done();
+                    }
+                });
+            }
+        }
+        const store = new S({field1: 0});
         store.action1();
     });
 
