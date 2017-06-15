@@ -43,6 +43,9 @@ export abstract class Store<T> {
             states[key] = inputState;
         });
         this.states = states;
+
+        // let functions = _.functions(Object.getPrototypeOf(this));
+        // console.log("functions", functions);
     }
 
     protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
@@ -82,6 +85,9 @@ export abstract class Store<T> {
         });
 
         this.currentData = cloneBack;
+
+
+
         const allRelevantFields = new Set<string>();
 
         // transfer field values to states
@@ -91,10 +97,10 @@ export abstract class Store<T> {
             this.states[fieldName].putValue(value);
 
             if (newFields.has(fieldName)) {
-                // this touched field was new
+                // touched field was new
                 touchedFields.delete(fieldName);
             } else {
-                // this touched field existed before
+                // touched field existed before
                 if (_.isNil(value)) {
                     logEvent.changes.push(["removed", fieldName, value]);
                 } else {
@@ -104,12 +110,11 @@ export abstract class Store<T> {
         });
 
         logStoreEvent(logEvent);
+        this.actionCompleted.next(allRelevantFields as any);
 
         if (options.afterAction) {
             options.afterAction(this, cloneBack, touchedFields, newFields);
         }
-
-        this.actionCompleted.next(allRelevantFields as any);
     }
 
     get data(): T {

@@ -1,4 +1,5 @@
 import {Store} from "./Store";
+import {enableReactiveStatesLogging} from "./log";
 
 
 describe("Store", function () {
@@ -97,15 +98,22 @@ describe("Store", function () {
         const calls: any[] = [];
         class S extends Store<{ field1?: number }> {
             action1() {
-                this.action("action1", data => {
+                this.action("outer", data => {
+                    // start inner asynchronous action
                     setTimeout(() => {
-                        this.action("action2", data => {
+                        // alter data in inner action
+                        this.action("inner", data => {
                             data.field1 = 2;
-                            // assert.deepEqual(calls, [0, 3, 2]);
-                            done();
+                        }, {
+                            afterAction: () => {
+                                assert.deepEqual(calls, [0, 1, 2]);
+                                done();
+                            }
                         });
                     }, 0);
-                    data.field1 = 3;
+
+                    // alter data in outer action
+                    data.field1 = 1;
                 });
             }
         }
