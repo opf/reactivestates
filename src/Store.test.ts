@@ -94,6 +94,22 @@ describe("Store", function () {
         assert.deepEqual(calls, [0, 2, 3]);
     });
 
+    it("nested actions can see dirty outer changes", function (done) {
+        class S extends Store<{ field1?: number }> {
+            action1() {
+                this.action("action1", data => {
+                    data.field1 = 1;
+                    this.action("action2", data => {
+                        assert.equal(data.field1, 1);
+                        done();
+                    });
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        store.action1();
+    });
+
     it("nested actions can be asynchronous", function (done) {
         const calls: any[] = [];
         class S extends Store<{ field1?: number }> {

@@ -29,6 +29,8 @@ export abstract class Store<T> {
 
     private currentData: T;
 
+    private dataThreadLocal: T|null = null;
+
     private actionCompleted = new Subject<Set<keyof T>>();
 
     constructor(data: T) {
@@ -50,70 +52,51 @@ export abstract class Store<T> {
 
     protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
         options = options ? options : {};
-        const touchedFields = new Set<string>();
 
-        const clone: any = {};
-        const cloneBack: any = _.clone(this.currentData);
-        _.forIn(cloneBack, (value: any, key: string) => {
-            Object.defineProperty(
-                    clone,
-                    key,
-                    {
-                        enumerable: true,
-                        get: () => cloneBack[key],
-                        set: (val: any) => {
-                            touchedFields.add(key);
-                            cloneBack[key] = val;
-                        }
-                    }
-            );
-        });
-
+        const origin: any = this.dataThreadLocal !== null ? this.dataThreadLocal : this.currentData;
+        const clone: any = _.clone(origin);
+        this.dataThreadLocal = clone;
         fn(clone, 1);
+        this.dataThreadLocal = origin;
+        this.currentData = clone;
 
+        const newFields = new Set<string>();
+        const changedFields = new Set<string>();
+        const newAndChangedFields = new Set<string>();
         const logEvent = new LogEvent(name, []);
 
-        // check for new fields
-        const newFields = new Set<string>(_.difference(_.keysIn(clone), _.keysIn(cloneBack)));
-        newFields.forEach(fieldName => {
-            this.states[fieldName] = createInputState(fieldName);
-            let value = clone[fieldName];
-            cloneBack[fieldName] = value;
-            touchedFields.add(fieldName);
+        // Check changes
+        _.keysIn(clone).forEach(fieldName => {
+            const value = clone[fieldName];
+            if (_.hasIn(origin, fieldName)) {
+                const valueInOrigin = origin[fieldName];
+                if (!_.eq(value, valueInOrigin)) {
+                    // field changed
+                    this.states[fieldName].putValue(value);
+                    changedFields.add(fieldName);
+                    newAndChangedFields.add(fieldName);
 
-            logEvent.changes.push(["added", fieldName, value]);
-        });
-
-        this.currentData = cloneBack;
-
-
-
-        const allRelevantFields = new Set<string>();
-
-        // transfer field values to states
-        touchedFields.forEach(fieldName => {
-            allRelevantFields.add(fieldName);
-            let value = cloneBack[fieldName];
-            this.states[fieldName].putValue(value);
-
-            if (newFields.has(fieldName)) {
-                // touched field was new
-                touchedFields.delete(fieldName);
-            } else {
-                // touched field existed before
-                if (_.isNil(value)) {
-                    logEvent.changes.push(["removed", fieldName, value]);
-                } else {
-                    logEvent.changes.push(["changed", fieldName, value]);
+                    if (_.isNil(value)) {
+                        logEvent.changes.push(["removed", fieldName, value]);
+                    } else {
+                        logEvent.changes.push(["changed", fieldName, value]);
+                    }
                 }
+            } else {
+                // field was added
+                newFields.add(fieldName);
+                newAndChangedFields.add(fieldName);
+                this.states[fieldName] = createInputState(fieldName);
+                this.states[fieldName].putValue(value);
+                logEvent.changes.push(["added", fieldName, value]);
             }
         });
 
         logStoreEvent(logEvent);
-        this.actionCompleted.next(allRelevantFields as any);
+        this.actionCompleted.next(newAndChangedFields as any);
 
         if (options.afterAction) {
-            options.afterAction(this, cloneBack, touchedFields, newFields);
+            options.afterAction(this, clone, changedFields, newFields);
         }
     }
 
