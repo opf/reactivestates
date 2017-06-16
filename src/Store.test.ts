@@ -1,7 +1,12 @@
-import {Store} from "./Store";
+import {ActionOptions, enableDevelopmentMode, Store} from "./Store";
 import {enableReactiveStatesLogging} from "./log";
 
 describe("Store", function () {
+
+    beforeEach(function () {
+        enableDevelopmentMode();
+        enableReactiveStatesLogging(false);
+    });
 
     it("an action can create a new field", function () {
         class S extends Store<{ field1?: number }> {
@@ -131,6 +136,49 @@ describe("Store", function () {
         store.action1();
     });
 
+    it("defaultActionOptions are used", function (done) {
+        class S extends Store<{}> {
+
+            protected defaultActionOptions(): ActionOptions<{}> {
+                return {
+                    afterAction: () => {
+                        done();
+                    }
+                };
+            }
+
+            action1() {
+                this.action("action1", () => {
+                });
+            }
+        }
+        const store = new S({});
+        store.action1();
+    });
+
+    it("action options override the defaultActionOptions", function (done) {
+        class S extends Store<{}> {
+
+            protected defaultActionOptions(): ActionOptions<{}> {
+                return {
+                    afterAction: () => {
+                        throw new Error();
+                    }
+                };
+            }
+
+            action1() {
+                this.action("action1", () => {
+                }, {
+                    afterAction: () => {
+                        done();
+                    }
+                });
+            }
+        }
+        const store = new S({});
+        store.action1();
+    });
 
     it("callback afterAction", function (done) {
         class S extends Store<{ field1?: number, field2?: number }> {
@@ -150,6 +198,57 @@ describe("Store", function () {
             }
         }
         const store = new S({field1: 0});
+        store.action1();
+    });
+
+    it("actions must not modify nested fields", function (done) {
+        class S extends Store<{ field1: number[] }> {
+            action1() {
+                this.action("action", data => {
+                    data.field1.push(1);
+                });
+            }
+        }
+        const store = new S({field1: []});
+        try {
+            store.action1();
+        } catch (e) {
+            done();
+        }
+    });
+
+    it("action option - deepCloneFields", function () {
+        class S extends Store<{ field1: number[] }> {
+            action1() {
+                this.action("action", data => {
+                    data.field1.push(1);
+                }, {deepCloneFields: ["field1"]});
+            }
+        }
+        const store = new S({field1: []});
+        store.action1();
+    });
+
+    it("action option - deepCloneFields correctly identifies changed fields", function (done) {
+        class S extends Store<{ field1?: number[], field2: number[], field3: number[] }> {
+            action1() {
+                this.action("action", data => {
+                    data.field3.push(1);
+                }, {
+                    deepCloneFields: ["field1", "field2", "field3"],
+                    afterAction: (store, data, modifiedFields, newFields) => {
+                        assert.isFalse(modifiedFields.has("field1"));
+                        assert.isFalse(newFields.has("field1"));
+                        assert.isFalse(modifiedFields.has("field2"));
+                        assert.isFalse(newFields.has("field2"));
+                        assert.isTrue(modifiedFields.has("field3"));
+                        assert.isFalse(newFields.has("field3"));
+                        done();
+                    }
+                });
+            }
+        }
+        const store = new S({field2: [], field3: []});
         store.action1();
     });
 

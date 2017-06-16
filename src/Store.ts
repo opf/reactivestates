@@ -1,20 +1,27 @@
 import * as _ from "lodash";
 import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
-// import "zone.js";
 import {input, InputState} from "./InputState";
+import {enableReactiveStatesLogging} from "./log";
 import {LogEvent, logStoreEvent} from "./StoreLog";
+
+let developmentMode = false;
 
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
 export interface ActionOptions<T> {
-    // name?: string;
-    afterAction?: (store: Store<T>, data: T, touchedFields: Set<string>, newFields: Set<string>) => void;
+    deepCloneFields?: (keyof T)[];
+    afterAction?: (store: Store<T>, data: T, modifiedFields: Set<string>, newFields: Set<string>) => void;
 }
 
 export interface SelectEvent<T> {
     data: T;
     fields: Set<keyof T>;
+}
+
+export function enableDevelopmentMode(enable: boolean = true) {
+    developmentMode = enable;
+    enableReactiveStatesLogging(enable);
 }
 
 function createInputState(name: string) {
@@ -24,24 +31,6 @@ function createInputState(name: string) {
     return is;
 }
 
-// function getCallerInfo(stack: string|undefined) {
-//     if (stack === undefined) {
-//         return "<unkown>";
-//     }
-//
-//     const lines = stack.split("\n");
-//     let source = lines[2].trim();
-//     source = source.substr(3); // remove 'at '
-//     let end = source.indexOf(" (");
-//     if (end >= 0) {
-//         source = source.substring(0, end);
-//     }
-//
-//     return source;
-// }
-
-// const ZoneKeyData = "ReactiveStatesStoreData";
-// const ZoneKeyMethodName = "ReactiveStatesStoreMethodName";
 
 export abstract class Store<T> {
 
@@ -50,8 +39,6 @@ export abstract class Store<T> {
     private currentData: T;
 
     private transientDataInAction: T;
-
-    // private dataThreadLocal: T | null = null;
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
@@ -67,61 +54,65 @@ export abstract class Store<T> {
             states[key] = inputState;
         });
         this.states = states;
-
-        // this.wrapMethodsInZones();
     }
 
-    // private wrapMethodsInZones() {
-    //     const functions = _.functions(Object.getPrototypeOf(this));
-    //     const self: any = this;
-    //     functions.forEach(functionName => {
-    //         const original: any = _.get(this, functionName);
-    //         _.set(this, functionName, function () {
-    //             const props: any = {};
-    //             props[ZoneKeyMethodName] = functionName;
-    //             const fnZone = Zone.current.fork({name: functionName, properties: props});
-    //             fnZone.run(original, self, arguments as any);
-    //         });
-    //     });
-    // }
+    protected defaultActionOptions(): ActionOptions<T> {
+        return {};
+    }
 
-    protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
-
-        options = options ? options : {};
+    protected action(name: string, fn: (data: T, bla: any) => void, actionOptions?: ActionOptions<T>) {
+        const options = _.merge(this.defaultActionOptions(), actionOptions);
 
         const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
+
+        // in devMode: remember state to check if the action deeply change anything
+        let outerDataCopy: any;
+        let outerDataWasModified = false;
+        if (developmentMode) {
+            outerDataCopy = _.cloneDeep(outerData);
+        }
+
         const innerData: any = _.clone(outerData);
+        let deepCloneFields = new Set<string>();
+        if (options.deepCloneFields) {
+            options.deepCloneFields.forEach(field => {
+                if (_.has(outerData, field)) {
+                    innerData[field] = _.cloneDeep(outerData[field]);
+                    deepCloneFields.add(field);
+                }
+            });
+        }
+
         this.transientDataInAction = innerData;
-        // const properties: any = {};
-        // properties[ZoneKeyData] = innerData;
-        // let childZone = Zone.current.fork({
-        //     name: "action",
-        //     properties
-        // });
-        // childZone.run(fn, this, [innerData]);
-        fn.apply(this, [innerData]);
-        // this.currentData = innerData;
-        this.transientDataInAction = outerData;
+        try {
+            fn.apply(this, [innerData]);
+        } finally {
+            this.transientDataInAction = outerData;
+        }
+
+        if (developmentMode) {
+            outerDataWasModified = !_.isEqual(outerData, outerDataCopy);
+            if (outerDataWasModified) {
+                throw new Error("action mutated data");
+            }
+        }
 
         const newFields = new Set<string>();
         const changedFields = new Set<string>();
         const newAndChangedFields = new Set<string>();
 
-        // Get method and action name for logging
+        // Logging
         let stack = new Error().stack;
-        // const caller = getCallerInfo(stack);
-        // let txName = options.name;
-        // txName = txName !== undefined ? " / " + txName : "";
-
         const logEvent = new LogEvent(name, [], stack);
 
         // Check changes
-        // const dataInCurrentZone: any = this.data;
         _.keysIn(innerData).forEach(fieldName => {
             const value = innerData[fieldName];
             if (_.hasIn(outerData, fieldName)) {
                 const valueInOrigin = outerData[fieldName];
-                if (!_.eq(value, valueInOrigin)) {
+
+                const eq = deepCloneFields.has(fieldName) ? _.isEqual : _.eq;
+                if (!eq(value, valueInOrigin)) {
                     // field changed
                     this.states[fieldName].putValue(value);
                     outerData[fieldName] = value;
@@ -154,9 +145,7 @@ export abstract class Store<T> {
     }
 
     get data(): T {
-        let data = undefined;
-        // let data = Zone.current.get(ZoneKeyData);
-        return data === undefined ? this.currentData : data;
+        return this.currentData;
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {

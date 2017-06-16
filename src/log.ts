@@ -48,8 +48,8 @@ export function logStateChange(state: State<any, any>, msg?: string) {
 }
 
 
-export function enableReactiveStatesLogging() {
-    logEnabled = true;
+export function enableReactiveStatesLogging(enable: boolean = true) {
+    logEnabled = enable;
 }
 
 export function isLogEnabled() {
