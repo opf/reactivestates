@@ -36,7 +36,7 @@ export function defaultLog(event: LogEvent) {
         });
 
         if (event.stack) {
-            console.log("%cStack %o", cssStyleGreyOnWhite, event.stack.split("\n"));
+            console.log("%cStack %o", cssStyleGreyOnWhite, event.stack);
         }
 
         console.groupEnd();
