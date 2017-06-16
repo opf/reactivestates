@@ -35,9 +35,9 @@ export function defaultLog(event: LogEvent) {
             }
         });
 
-        if (event.stack) {
-            console.log("%cStack %o", cssStyleGreyOnWhite, event.stack);
-        }
+        // if (event.stack) {
+        //     console.log("%cStack %o", cssStyleGreyOnWhite, event.stack.split("\n");
+        // }
 
         console.groupEnd();
     }
