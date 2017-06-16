@@ -105,6 +105,7 @@ describe("Store", function () {
 
     it("nested actions can be asynchronous", function (done) {
         enableReactiveStatesLogging();
+
         const calls: any[] = [];
         class S extends Store<{ field1?: number }> {
             action1() {

@@ -7,7 +7,8 @@ export type FieldChangeType = "added" | "changed" | "removed";
 
 export class LogEvent {
     constructor(public name: string,
-                public changes: [FieldChangeType, string, any][]) {
+                public changes: [FieldChangeType, string, any][],
+                public stack: string | undefined) {
     }
 }
 
@@ -30,6 +31,13 @@ export function defaultLog(event: LogEvent) {
                 console.log("%c" + fieldName, cssStyleRedOnWhite);
             }
         });
+
+        if (event.stack) {
+            console.groupCollapsed("Stack");
+            console.log(event.stack);
+            console.groupEnd();
+        }
+
         console.groupEnd();
     }
 }

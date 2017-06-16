@@ -30,7 +30,14 @@ function getCallerInfo(stack: string|undefined) {
     }
 
     const lines = stack.split("\n");
-    return lines[2].trim();
+    let source = lines[2].trim();
+    source = source.substr(3); // remove 'at '
+    let end = source.indexOf(" (");
+    if (end >= 0) {
+        source = source.substring(0, end);
+    }
+
+    return source;
 }
 
 // const ZoneKeyData = "ReactiveStatesStoreData";
@@ -101,12 +108,13 @@ export abstract class Store<T> {
         const newAndChangedFields = new Set<string>();
 
         // Get method and action name for logging
-        const caller = getCallerInfo(new Error().stack);
+        let stack = new Error().stack;
+        const caller = getCallerInfo(stack);
         let txName = options.name;
         txName = txName !== undefined ? " / " + txName : "";
 
 
-        const logEvent = new LogEvent(caller + txName, []);
+        const logEvent = new LogEvent(caller + txName, [], stack);
 
         // Check changes
         // const dataInCurrentZone: any = this.data;
