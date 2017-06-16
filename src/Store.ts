@@ -8,7 +8,7 @@ import {LogEvent, logStoreEvent} from "./StoreLog";
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
 export interface ActionOptions<T> {
-    name?: string;
+    // name?: string;
     afterAction?: (store: Store<T>, data: T, touchedFields: Set<string>, newFields: Set<string>) => void;
 }
 
@@ -24,21 +24,21 @@ function createInputState(name: string) {
     return is;
 }
 
-function getCallerInfo(stack: string|undefined) {
-    if (stack === undefined) {
-        return "<unkown>";
-    }
-
-    const lines = stack.split("\n");
-    let source = lines[2].trim();
-    source = source.substr(3); // remove 'at '
-    let end = source.indexOf(" (");
-    if (end >= 0) {
-        source = source.substring(0, end);
-    }
-
-    return source;
-}
+// function getCallerInfo(stack: string|undefined) {
+//     if (stack === undefined) {
+//         return "<unkown>";
+//     }
+//
+//     const lines = stack.split("\n");
+//     let source = lines[2].trim();
+//     source = source.substr(3); // remove 'at '
+//     let end = source.indexOf(" (");
+//     if (end >= 0) {
+//         source = source.substring(0, end);
+//     }
+//
+//     return source;
+// }
 
 // const ZoneKeyData = "ReactiveStatesStoreData";
 // const ZoneKeyMethodName = "ReactiveStatesStoreMethodName";
@@ -85,7 +85,7 @@ export abstract class Store<T> {
     //     });
     // }
 
-    protected action(fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
+    protected action(name: string, fn: (data: T, bla: any) => void, options?: ActionOptions<T>) {
 
         options = options ? options : {};
 
@@ -109,12 +109,11 @@ export abstract class Store<T> {
 
         // Get method and action name for logging
         let stack = new Error().stack;
-        const caller = getCallerInfo(stack);
-        let txName = options.name;
-        txName = txName !== undefined ? " / " + txName : "";
+        // const caller = getCallerInfo(stack);
+        // let txName = options.name;
+        // txName = txName !== undefined ? " / " + txName : "";
 
-
-        const logEvent = new LogEvent(caller + txName, [], stack);
+        const logEvent = new LogEvent(name, [], stack);
 
         // Check changes
         // const dataInCurrentZone: any = this.data;

@@ -1,5 +1,8 @@
 import * as _ from "lodash";
-import {cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleRedOnWhite, isLogEnabled, logTimePeriodDivider} from "./log";
+import {
+    cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleGreyOnWhite, cssStyleRedOnWhite, isLogEnabled,
+    logTimePeriodDivider
+} from "./log";
 
 let logFn: (event: LogEvent) => void = defaultLog;
 
@@ -33,9 +36,7 @@ export function defaultLog(event: LogEvent) {
         });
 
         if (event.stack) {
-            console.groupCollapsed("Stack");
-            console.log(event.stack);
-            console.groupEnd();
+            console.log("%cStack %o", cssStyleGreyOnWhite, event.stack.split("\n"));
         }
 
         console.groupEnd();
