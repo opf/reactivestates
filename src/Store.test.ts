@@ -1,5 +1,5 @@
-import {ActionOptions, enableDevelopmentMode, Store} from "./Store";
 import {enableReactiveStatesLogging} from "./log";
+import {ActionOptions, enableDevelopmentMode, Store} from "./Store";
 
 describe("Store", function () {
 
@@ -17,11 +17,8 @@ describe("Store", function () {
             }
         }
         const store = new S({});
-        const calls: any[] = [];
-        store.select("field1").subscribe(s => calls.push(s.data.field1));
         store.action1();
         assert.equal(store.data.field1, 1);
-        assert.deepEqual(calls, [1]);
     });
 
     it("an action can change a field", function () {
@@ -34,11 +31,8 @@ describe("Store", function () {
         }
         const store = new S({field1: 0});
         assert.equal(store.data.field1, 0);
-        const calls: any[] = [];
-        store.select("field1").subscribe(s => calls.push(s.data.field1));
         store.action1();
         assert.equal(store.data.field1, 1);
-        assert.deepEqual(calls, [0, 1]);
     });
 
     it("an action can set a field to undefined", function () {
@@ -50,11 +44,8 @@ describe("Store", function () {
             }
         }
         const store = new S({field1: 1});
-        const calls: any[] = [];
-        store.select("field1").subscribe(s => calls.push(s.data.field1));
         store.action1();
         assert.isUndefined(store.data.field1);
-        assert.deepEqual(calls, [1, undefined]);
     });
 
     it("access to this.data is isolated inside an action", function (done) {
@@ -251,5 +242,62 @@ describe("Store", function () {
         const store = new S({field2: [], field3: []});
         store.action1();
     });
+
+    it("select() emits values initially", function (done) {
+        class S extends Store<{ field1: number[] }> {
+        }
+        const store = new S({field1: []});
+        store.select("field1")
+                .subscribe(() => done());
+    });
+
+    it("select() emits values whenever a selected field changes", function () {
+        class S extends Store<{ field1: number }> {
+            action1() {
+                this.action("change field", data => {
+                    data.field1 = 1;
+                })
+            }
+        }
+        const calls: any[] = [];
+        const store = new S({field1: 0});
+        store.select("field1")
+                .subscribe(() => calls.push(store.data.field1));
+        store.action1();
+        assert.deepEqual(calls, [0, 1]);
+    });
+
+    it("select() doesn't emit values when a non-selected field changes", function () {
+        class S extends Store<{ field1: number, field2: number }> {
+            action1() {
+                this.action("change field", data => {
+                    data.field1 = 1;
+                })
+            }
+        }
+        const calls: any[] = [];
+        const store = new S({field1: 0, field2: 5});
+        store.select("field2")
+                .subscribe(() => calls.push(store.data.field2));
+        store.action1();
+        assert.deepEqual(calls, [5]);
+    });
+
+    it("select() - allSelectedFieldsNonNil", function () {
+        class S extends Store<{ field1: number, field2: number | null }> {
+            action1() {
+                this.action("change field", data => {
+                    data.field2 = 1;
+                })
+            }
+        }
+        const calls: any[] = [];
+        const store = new S({field1: 0, field2: null});
+        store.select("field1", "field2")
+                .subscribe(s => calls.push(s.allSelectedFieldsNonNil()));
+        store.action1();
+        assert.deepEqual(calls, [false, true]);
+    });
+
 
 });

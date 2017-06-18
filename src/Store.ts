@@ -14,9 +14,15 @@ export interface ActionOptions<T> {
     afterAction?: (store: Store<T>, data: T, modifiedFields: Set<string>, newFields: Set<string>) => void;
 }
 
-export interface SelectEvent<T> {
-    data: T;
-    fields: Set<keyof T>;
+export class SelectEvent<T> {
+
+    constructor(public readonly data: T,
+                public readonly fields: Set<keyof T>) {
+    }
+
+    allSelectedFieldsNonNil(): boolean {
+        return _.every(Array.from(this.fields), f => !_.isNil((this.data as any)[f]));
+    }
 }
 
 export function enableDevelopmentMode(enable: boolean = true) {
@@ -149,47 +155,12 @@ export abstract class Store<T> {
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        let futureChanges = this.actionCompleted
+        return this.actionCompleted
                 .filter(touchedFields => {
                     return _.some(fields, f => touchedFields.has(f));
-                });
-
-        let alreadyHasAllSelectedFields = _.every(fields, field => {
-            let state = this.states[field];
-            if (state === undefined) {
-                return false;
-            } else if (!state.hasValue()) {
-                return false;
-            }
-
-            return true;
-        });
-
-        if (alreadyHasAllSelectedFields) {
-            futureChanges = futureChanges.startWith(new Set(fields));
-        }
-
-        return futureChanges
-                .map(fields => {
-                    return {
-                        data: this.data,
-                        fields: new Set(fields)
-                    };
-                });
-    }
-
-    selectAll<K extends keyof T>(): Observable<SelectEvent<T>> {
-        const data: T = this.data;
-        const keys: string[] = _.keysIn(data);
-        const keysWithValues: string[] = keys.filter(key => _.get(data, key) !== undefined);
-        return this.actionCompleted
-                .startWith(new Set(keysWithValues))
-                .map(fields => {
-                    return {
-                        data: this.data,
-                        fields: fields
-                    };
-                });
+                })
+                .startWith(new Set(fields))
+                .map(fields => new SelectEvent(this.data, new Set(fields)));
     }
 
 }
