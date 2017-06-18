@@ -299,5 +299,13 @@ describe("Store", function () {
         assert.deepEqual(calls, [false, true]);
     });
 
+    it("selectNonNil() emits a value if all selected fields are already nonNil", function (done) {
+        class S extends Store<{ field1: number }> {
+        }
+        const store = new S({field1: 0});
+        store.selectNonNil("field1")
+                .subscribe(s => done());
+    });
+
 
 });
