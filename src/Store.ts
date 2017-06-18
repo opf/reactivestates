@@ -156,15 +156,15 @@ export abstract class Store<T> {
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
         return this.actionCompleted
-                .filter(touchedFields => {
-                    return _.some(fields, f => touchedFields.has(f));
+                .filter(changedFields => {
+                    return _.some(fields, f => changedFields.has(f));
                 })
                 .startWith(new Set(fields))
                 .map(fields => new SelectEvent(this.data, new Set(fields)));
     }
 
     selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        return this.select(fields as any)
+        return this.select(...fields)
                 .filter(s => s.allSelectedFieldsNonNil());
     }
 

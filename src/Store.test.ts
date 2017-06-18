@@ -283,17 +283,17 @@ describe("Store", function () {
         assert.deepEqual(calls, [5]);
     });
 
-    it("select() - allSelectedFieldsNonNil", function () {
-        class S extends Store<{ field1: number, field2: number | null }> {
+    it("select() - allSelectedFieldsNonNil return true if all selected fields are nonNil", function () {
+        class S extends Store<{ field1: number | null }> {
             action1() {
                 this.action("change field", data => {
-                    data.field2 = 1;
+                    data.field1 = 1;
                 })
             }
         }
         const calls: any[] = [];
-        const store = new S({field1: 0, field2: null});
-        store.select("field1", "field2")
+        const store = new S({field1: null});
+        store.select("field1")
                 .subscribe(s => calls.push(s.allSelectedFieldsNonNil()));
         store.action1();
         assert.deepEqual(calls, [false, true]);
@@ -307,5 +307,18 @@ describe("Store", function () {
                 .subscribe(s => done());
     });
 
+    it("selectNonNil() emits a value once all selected fields are nonNil", function (done) {
+        class S extends Store<{ field1: number | null}> {
+            action1() {
+                this.action("load field1", d => {
+                    d.field1 = 1;
+                });
+            }
+        }
+        const store = new S({field1: null});
+        store.selectNonNil("field1")
+                .subscribe(s => done());
+        store.action1();
+    });
 
 });
