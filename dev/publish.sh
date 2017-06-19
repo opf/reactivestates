@@ -5,5 +5,5 @@ cd ..
 
 git add .
 git commit -m "new release"
-npm run dist && npm run mocha && npm publish
+npm run dist && npm run test && npm publish
 npm version patch

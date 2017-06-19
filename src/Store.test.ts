@@ -256,7 +256,7 @@ describe("Store", function () {
             action1() {
                 this.action("change field", data => {
                     data.field1 = 1;
-                })
+                });
             }
         }
         const calls: any[] = [];
@@ -272,7 +272,7 @@ describe("Store", function () {
             action1() {
                 this.action("change field", data => {
                     data.field1 = 1;
-                })
+                });
             }
         }
         const calls: any[] = [];
@@ -288,7 +288,7 @@ describe("Store", function () {
             action1() {
                 this.action("change field", data => {
                     data.field1 = 1;
-                })
+                });
             }
         }
         const calls: any[] = [];

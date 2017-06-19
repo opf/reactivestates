@@ -15,20 +15,9 @@
     "@types/lodash": "4.14.43",
     "awesome-typescript-loader": "3.0.0-beta.13",
     "chai": "^3.5.0",
-    "del": "latest",
-    "gulp": "latest",
-    "gulp-cached": "latest",
-    "gulp-run": "^1.7.1",
-    "gulp-sourcemaps": "latest",
-    "gulp-typescript": "latest",
-    "gulp-uglify": "latest",
-    "gulp-util": "latest",
-    "gulp-watch": "latest",
-    "jasmine-core": "^2.5.2",
+    "del-cli": "^1.0.0",
     "jquery": "^3.1.1",
-    "merge2": "latest",
     "mocha": "^3.2.0",
-    "run-sequence": "latest",
     "source-map-support": "^0.4.6",
     "ts-node": "^1.7.2",
     "tslint": "^5.0.0",
@@ -40,14 +29,11 @@
   "peerDependencies": {
     "rxjs": "5.x"
   },
-  "engines": {
-    "node": ">=0.8.0"
-  },
   "scripts": {
-    "watch": "gulp watch",
-    "dist": "gulp dist",
-    "mocha": "./node_modules/.bin/mocha --opts spec/mocha.opts dist/",
-    "mocha-watch": "./node_modules/.bin/mocha -w --opts spec/mocha.opts dist/",
+    "clean": "del-cli dist",
+    "dist": "npm run clean ; tsc -p tsconfig.dist.json",
+    "test": "mocha --opts spec/mocha.opts src/**/*.test.ts",
+    "test-watch": "mocha --opts spec/mocha.opts -w --watch-extensions ts src/**/*.test.ts",
     "demos-plain": "webpack-dev-server --config demos/plain/webpack.config.js"
   }
 }
