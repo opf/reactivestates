@@ -165,7 +165,7 @@ export abstract class Store<T> {
         }
 
         if (developmentMode) {
-            this.dataAfterLastAction = _.cloneDeep(outerData);
+            this.dataAfterLastAction = _.cloneDeep(this.currentData);
             this.nameOfLastAction = name;
         }
 
