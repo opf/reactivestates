@@ -44,7 +44,7 @@ export abstract class Store<T> {
 
     private currentData: T;
 
-    private transientDataInAction: T;
+    // private transientDataInAction: T;
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
@@ -69,7 +69,8 @@ export abstract class Store<T> {
     protected action(name: string, fn: (data: T, bla: any) => void, actionOptions?: ActionOptions<T>) {
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
-        const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
+        const outerData: any = this.data;
+        // const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
 
         // in devMode: remember state to check if the action deeply change anything
         let outerDataCopy: any;
@@ -89,11 +90,12 @@ export abstract class Store<T> {
             });
         }
 
-        this.transientDataInAction = innerData;
+        this.currentData = innerData;
         try {
             fn.apply(this, [innerData]);
-        } finally {
-            this.transientDataInAction = outerData;
+        }
+        finally {
+            this.currentData = outerData;
         }
 
         if (developmentMode) {

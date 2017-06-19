@@ -48,12 +48,13 @@ describe("Store", function () {
         assert.isUndefined(store.data.field1);
     });
 
-    it("access to this.data is isolated inside an action", function (done) {
+    it("access to this.data reflects the changes inside an action", function (done) {
         class S extends Store<{ field1?: number }> {
             action1() {
+                assert.equal(this.data.field1, 0);
                 this.action("action1", data => {
                     data.field1 = 1;
-                    assert.equal(this.data.field1, 0);
+                    assert.equal(this.data.field1, 1);
                     assert.equal(data.field1, 1);
                     done();
                 });
@@ -61,6 +62,20 @@ describe("Store", function () {
         }
         const store = new S({field1: 0});
         store.action1();
+    });
+
+    it("exceptions during an action rollback all changes", function () {
+        class S extends Store<{ field1?: number }> {
+            action1() {
+                this.action("action1", data => {
+                    data.field1 = 1;
+                    throw new Error();
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        assert.throws(() => store.action1());
+        assert.equal(store.data.field1, 0);
     });
 
     it("nested actions can see dirty outer changes", function (done) {
