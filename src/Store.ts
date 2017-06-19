@@ -66,7 +66,7 @@ export abstract class Store<T> {
         return {};
     }
 
-    protected action(name: string, fn: (data: T, bla: any) => void, actionOptions?: ActionOptions<T>) {
+    protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
         const outerData: any = this.data;
@@ -91,8 +91,9 @@ export abstract class Store<T> {
         }
 
         this.currentData = innerData;
+        let result: R;
         try {
-            fn.apply(this, [innerData]);
+            result = fn.apply(this, [innerData]);
         }
         finally {
             this.currentData = outerData;
@@ -150,6 +151,8 @@ export abstract class Store<T> {
         if (options.afterAction) {
             options.afterAction(this, innerData, changedFields, newFields);
         }
+
+        return result;
     }
 
     get data(): T {
