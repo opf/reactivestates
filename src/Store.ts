@@ -7,6 +7,9 @@ import {LogEvent, logStoreEvent} from "./StoreLog";
 
 let developmentMode = false;
 
+let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean
+        = (v1: any, v2: any) => _.isEqual(v1, v2);
+
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
 export interface ActionOptions<T> {
@@ -23,6 +26,10 @@ export class SelectEvent<T> {
     allSelectedFieldsNonNil(): boolean {
         return _.every(Array.from(this.fields), f => !_.isNil((this.data as any)[f]));
     }
+}
+
+export function setInvalidDataModificationComparator<T>(fn: (v1: T, v2: T) => boolean) {
+    invalidDataModificationComparator = fn;
 }
 
 export function enableDevelopmentMode(enable: boolean = true) {
@@ -71,7 +78,7 @@ export abstract class Store<T> {
     protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
         if (developmentMode) {
             const invalidDataChange = this.dataAfterLastAction !== null
-                    && !_.isEqual(this.currentData, this.dataAfterLastAction);
+                    && !invalidDataModificationComparator(this.currentData, this.dataAfterLastAction);
             if (invalidDataChange) {
                 const msg = `data was modified between actions '${this.nameOfLastAction}' and '${name}'`;
                 console.error(msg + "\n%o %o", this.dataAfterLastAction, this.data);
