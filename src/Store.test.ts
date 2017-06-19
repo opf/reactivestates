@@ -223,6 +223,22 @@ describe("Store", function () {
         }
     });
 
+    it("data must not be modified between actions", function () {
+        class S extends Store<{ field1: number }> {
+            action1() {
+                this.action("action", d => {
+                    d.field1++;
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        assert.equal(store.data.field1, 0);
+        store.action1();
+        assert.equal(store.data.field1, 1);
+        store.data.field1++;
+        assert.throws(() => store.action1());
+    });
+
     it("action option - deepCloneFields", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {

@@ -44,7 +44,9 @@ export abstract class Store<T> {
 
     private currentData: T;
 
-    // private transientDataInAction: T;
+    private dataAfterLastAction: T | null = null;
+
+    private nameOfLastAction: string | null = null;
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
@@ -67,9 +69,18 @@ export abstract class Store<T> {
     }
 
     protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
+        if (developmentMode) {
+            const invalidDataChange = this.dataAfterLastAction !== null
+                    && !_.isEqual(this.currentData, this.dataAfterLastAction);
+            if (invalidDataChange) {
+                throw new Error(
+                        `data was modified between actions '${this.nameOfLastAction}' and '${name}'`);
+            }
+        }
+
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
-        const outerData: any = this.data;
+        const outerData: any = this.currentData;
         // const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
 
         // in devMode: remember state to check if the action deeply change anything
@@ -150,6 +161,11 @@ export abstract class Store<T> {
 
         if (options.afterAction) {
             options.afterAction(this, innerData, changedFields, newFields);
+        }
+
+        if (developmentMode) {
+            this.dataAfterLastAction = _.cloneDeep(outerData);
+            this.nameOfLastAction = name;
         }
 
         return result;
