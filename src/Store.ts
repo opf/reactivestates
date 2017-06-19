@@ -74,7 +74,7 @@ export abstract class Store<T> {
                     && !_.isEqual(this.currentData, this.dataAfterLastAction);
             if (invalidDataChange) {
                 const msg = `data was modified between actions '${this.nameOfLastAction}' and '${name}'`;
-                console.error(msg + " %o %o", this.dataAfterLastAction, this.data);
+                console.error(msg + "\n%o %o", this.dataAfterLastAction, this.data);
                 throw new Error(msg);
             }
         }
