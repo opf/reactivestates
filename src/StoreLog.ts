@@ -1,8 +1,5 @@
 import * as _ from "lodash";
-import {
-    cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleGreyOnWhite, cssStyleRedOnWhite, isLogEnabled,
-    logTimePeriodDivider
-} from "./log";
+import {cssStyleBlueOnWhite, cssStyleGreenOnWhite, cssStyleRedOnWhite, isLogEnabled, logTimePeriodDivider} from "./log";
 
 let logFn: (event: LogEvent) => void = defaultLog;
 
@@ -15,9 +12,12 @@ export class LogEvent {
     }
 }
 
+export function isBrowser(): boolean {
+    return _.hasIn(console, "debug") && _.hasIn(console, "group");
+}
+
 export function defaultLog(event: LogEvent) {
-    const isBrowser: boolean = _.hasIn(console, "group");
-    if (!isBrowser) {
+    if (!isBrowser()) {
         console.log(event.name);
         event.changes.forEach(([changeType, fieldName, value]) => {
             console.log("    [" + changeType + "] " + fieldName + " = " + value);
@@ -41,6 +41,30 @@ export function defaultLog(event: LogEvent) {
 
         console.groupEnd();
     }
+}
+
+export function logInvalidStateChangeOutsideAction(action1: string, action2: string, state1: any, state2: any): Error {
+    const msg = `data was modified between actions '${action1}' and '${action2}'`;
+    if (isLogEnabled()) {
+        if (isBrowser()) {
+            console.error("[RS] " + msg + "\n%o %o", state1, state2);
+        } else {
+            console.log("[RS] Error: " + msg);
+        }
+    }
+    return new Error(msg);
+}
+
+export function logInvalidDataChangeInsideAction(action: string): Error {
+    const msg = `data was modified via 'this.data' inside action '${action}'`;
+    if (isLogEnabled()) {
+        if (isBrowser()) {
+            console.error("[RS] " + msg);
+        } else {
+            console.log("[RS] Error: " + msg);
+        }
+    }
+    return new Error(msg);
 }
 
 export function setLogger(fn: (event: LogEvent) => void) {

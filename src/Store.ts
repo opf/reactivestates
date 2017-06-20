@@ -3,7 +3,10 @@ import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
-import {LogEvent, logStoreEvent} from "./StoreLog";
+import {
+    LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction,
+    logStoreEvent
+} from "./StoreLog";
 
 let developmentMode = false;
 
@@ -26,6 +29,7 @@ export class SelectEvent<T> {
     allSelectedFieldsNonNil(): boolean {
         return _.every(Array.from(this.fields), f => !_.isNil((this.data as any)[f]));
     }
+
 }
 
 export function setInvalidDataModificationComparator<T>(fn: (v1: T, v2: T) => boolean) {
@@ -49,19 +53,40 @@ export abstract class Store<T> {
 
     readonly states: StateMembers<T>;
 
-    private currentData: T;
+    private dataState: T;
 
-    private dataAfterLastAction: T | null = null;
+    private actionDataState: T | null = null;
 
-    private nameOfLastAction: string | null = null;
+    private actionNameStack: string[] = [];
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
-    constructor(data: T) {
-        this.currentData = data;
+    private actionStackCompletedTrigger = new Subject<any>();
 
+    private actionCompletedBuffered: Observable<Set<keyof T>> = this.actionCompleted
+            .bufferWhen(() => this.actionStackCompletedTrigger)
+            .map(sets => {
+                const all = new Set<any>();
+                sets.forEach(s => s.forEach(k => all.add(k)));
+                return all;
+            })
+    ;
+
+    // for debugging in dev mode --------------------------------
+    private dataAfterLastAction: T | null = null;
+
+    private nameOfLastAction: string | null = null;
+    // ----------------------------------------------------------
+
+    /**
+     * @param data
+     */
+    constructor(data: T) {
+        this.dataState = data;
+
+        // init inputStates
         const states: any = {};
-        _.forIn(this.currentData, (value: any, key: string) => {
+        _.forIn(this.dataState, (value: any, key: string) => {
             let inputState = createInputState(key);
             if (value !== undefined) {
                 inputState.putValue(value);
@@ -71,55 +96,103 @@ export abstract class Store<T> {
         this.states = states;
     }
 
+    get data(): T {
+        return this.dataState;
+    }
+
+    select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
+        return this.actionCompletedBuffered
+                .filter(changedFields => {
+                    return _.some(fields, f => changedFields.has(f));
+                })
+                .startWith(new Set(fields))
+                .map(fields => new SelectEvent(this.data, new Set(fields)));
+    }
+
+    selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
+        return this.select(...fields)
+                .filter(s => s.allSelectedFieldsNonNil());
+    }
+
+    stateField<M extends keyof T>(name: M): InputState<T[M]> {
+        if (!_.has(this.states, name)) {
+            this.states[name] = input<any>();
+        }
+        return this.states[name];
+    }
+
     protected defaultActionOptions(): ActionOptions<T> {
         return {};
     }
 
-    protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
+    private checkForInvalidStateChangeBetweenActions(currentActionName: string) {
         if (developmentMode) {
             const invalidDataChange = this.dataAfterLastAction !== null
-                    && !invalidDataModificationComparator(this.currentData, this.dataAfterLastAction);
+                    && !invalidDataModificationComparator(this.dataState, this.dataAfterLastAction);
             if (invalidDataChange) {
-                const msg = `data was modified between actions '${this.nameOfLastAction}' and '${name}'`;
-                console.error(msg + "\n%o %o", this.dataAfterLastAction, this.data);
-                throw new Error(msg);
+                throw logInvalidStateChangeOutsideAction(
+                        this.nameOfLastAction!, currentActionName, this.dataAfterLastAction, this.dataState);
             }
         }
+    }
+
+    protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
+        this.checkForInvalidStateChangeBetweenActions(name);
 
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
-        const outerData: any = this.currentData;
-        // const outerData: any = !_.isNil(this.transientDataInAction) ? this.transientDataInAction : this.data;
+        const outerActionData: any = this.actionDataState !== null ? this.actionDataState : this.dataState;
 
-        // in devMode: remember state to check if the action deeply change anything
+        // in devMode: remember state to check if the action deeply change anything (1/2)
         let outerDataCopy: any;
         let outerDataWasModified = false;
         if (developmentMode) {
-            outerDataCopy = _.cloneDeep(outerData);
+            outerDataCopy = _.cloneDeep(outerActionData);
         }
 
-        const innerData: any = _.clone(outerData);
+        // shallow/deep clone for action
+        const innerData: any = _.clone(outerActionData);
         let deepCloneFields = new Set<string>();
         if (options.deepCloneFields) {
-            options.deepCloneFields.forEach(field => {
-                if (_.has(outerData, field)) {
-                    innerData[field] = _.cloneDeep(outerData[field]);
-                    deepCloneFields.add(field);
+            options.deepCloneFields.forEach(fieldName => {
+                if (_.has(outerActionData, fieldName)) {
+                    innerData[fieldName] = _.cloneDeep(outerActionData[fieldName]);
+                    deepCloneFields.add(fieldName);
+                } else {
+                    throw new Error(`Can't deepCloneField '${fieldName}'. Field does not exist.`);
                 }
             });
         }
 
-        this.currentData = innerData;
+        // set defensive proxy to shield from modifications done via this.data
+        const defensiveProxy: any = {};
+        Object.setPrototypeOf(defensiveProxy, innerData);
+        this.dataState = defensiveProxy;
+
+        this.actionDataState = innerData;
+
+        this.actionNameStack.push(name);
         let result: R;
         try {
             result = fn.apply(this, [innerData]);
         }
         finally {
-            this.currentData = outerData;
+            this.dataState = outerActionData;
+            this.actionDataState = outerActionData;
+            this.actionNameStack.pop();
         }
 
+        // in devMode: check if fields were added to the defensiveProxy
         if (developmentMode) {
-            outerDataWasModified = !_.isEqual(outerData, outerDataCopy);
+            let addedMembersInProxy = _.keys(defensiveProxy);
+            if (addedMembersInProxy.length > 0) {
+                throw logInvalidDataChangeInsideAction(name);
+            }
+        }
+
+        // in devMode: remember state to check if the action deeply change anything (2/2)
+        if (developmentMode) {
+            outerDataWasModified = !_.isEqual(outerActionData, outerDataCopy);
             if (outerDataWasModified) {
                 throw new Error("action mutated data");
             }
@@ -136,14 +209,15 @@ export abstract class Store<T> {
         // Check changes
         _.keysIn(innerData).forEach(fieldName => {
             const value = innerData[fieldName];
-            if (_.hasIn(outerData, fieldName)) {
-                const valueInOrigin = outerData[fieldName];
+            if (_.hasIn(outerActionData, fieldName)) {
+                const valueInOrigin = outerActionData[fieldName];
 
                 const eq = deepCloneFields.has(fieldName) ? _.isEqual : _.eq;
                 if (!eq(value, valueInOrigin)) {
                     // field changed
-                    this.states[fieldName].putValue(value);
-                    outerData[fieldName] = value;
+                    this.stateField(fieldName as any).putValue(value);
+
+                    outerActionData[fieldName] = value;
                     changedFields.add(fieldName);
                     newAndChangedFields.add(fieldName);
 
@@ -155,46 +229,30 @@ export abstract class Store<T> {
                 }
             } else {
                 // field was added
-                outerData[fieldName] = value;
+                outerActionData[fieldName] = value;
                 newFields.add(fieldName);
                 newAndChangedFields.add(fieldName);
-                this.states[fieldName] = createInputState(fieldName);
-                this.states[fieldName].putValue(value);
+                this.stateField(fieldName as any).putValue(value);
                 logEvent.changes.push(["added", fieldName, value]);
             }
         });
 
         logStoreEvent(logEvent);
+
         this.actionCompleted.next(newAndChangedFields as any);
+        if (this.actionNameStack.length === 0) {
+            this.actionStackCompletedTrigger.next();
+        }
 
         if (options.afterAction) {
             options.afterAction(this, innerData, changedFields, newFields);
         }
 
         if (developmentMode) {
-            this.dataAfterLastAction = _.cloneDeep(this.currentData);
+            this.dataAfterLastAction = _.cloneDeep(this.dataState);
             this.nameOfLastAction = name;
         }
 
         return result;
     }
-
-    get data(): T {
-        return this.currentData;
-    }
-
-    select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        return this.actionCompleted
-                .filter(changedFields => {
-                    return _.some(fields, f => changedFields.has(f));
-                })
-                .startWith(new Set(fields))
-                .map(fields => new SelectEvent(this.data, new Set(fields)));
-    }
-
-    selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        return this.select(...fields)
-                .filter(s => s.allSelectedFieldsNonNil());
-    }
-
 }

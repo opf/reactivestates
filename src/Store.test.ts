@@ -48,22 +48,6 @@ describe("Store", function () {
         assert.isUndefined(store.data.field1);
     });
 
-    it("access to this.data reflects the changes inside an action", function (done) {
-        class S extends Store<{ field1?: number }> {
-            action1() {
-                assert.equal(this.data.field1, 0);
-                this.action("action1", data => {
-                    data.field1 = 1;
-                    assert.equal(this.data.field1, 1);
-                    assert.equal(data.field1, 1);
-                    done();
-                });
-            }
-        }
-        const store = new S({field1: 0});
-        store.action1();
-    });
-
     it("exceptions during an action rollback all changes", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
@@ -78,40 +62,156 @@ describe("Store", function () {
         assert.equal(store.data.field1, 0);
     });
 
-    it("nested actions can see dirty outer changes", function (done) {
-        class S extends Store<{ field1?: number }> {
+    // it("this.data reflects the changes inside an action", function (done) {
+    //     class S extends Store<{ field1?: number }> {
+    //         action1() {
+    //             assert.equal(this.data.field1, 0);
+    //             this.action("action1", data => {
+    //                 data.field1 = 1;
+    //                 assert.equal(this.data.field1, 1);
+    //                 assert.equal(data.field1, 1);
+    //                 done();
+    //             });
+    //         }
+    //     }
+    //     const store = new S({field1: 0});
+    //     store.action1();
+    // });
+
+    // it("this.data reflects new fields added by an action", function (done) {
+    //     class S extends Store<{ field1?: number }> {
+    //         action1() {
+    //             this.action("action1", data => {
+    //                 data.field1 = 1;
+    //                 assert.equal(this.data.field1, 1);
+    //                 done();
+    //             });
+    //         }
+    //     }
+    //     const store = new S({});
+    //     store.action1();
+    // });
+
+    it("changes from actions are visible inside nested actions via action data param and this.data", function () {
+        class S extends Store<{ field1: number, field2?: string }> {
             action1() {
-                this.action("outer", data => {
-                    data.field1 = 1;
-                    this.action("inner", data => {
-                        assert.equal(data.field1, 1);
-                        done();
+                this.action("a1", d1 => {
+                    d1.field1 = 1;
+                    d1.field2 = "a";
+
+                    assert.equal(this.data.field1, 1);
+                    assert.equal(this.data.field2, "a");
+
+                    this.action("a2", d2 => {
+                        assert.equal(d2.field1, 1);
+                        assert.equal(d2.field2, "a");
+                        assert.equal(this.data.field1, 1);
+                        assert.equal(this.data.field2, "a");
+
+                        d2.field1 = 2;
+                        d2.field2 = "b";
+
+                        assert.equal(this.data.field1, 2);
+                        assert.equal(this.data.field2, "b");
+
+                        this.action("a3", d3 => {
+                            assert.equal(d3.field1, 2);
+                            assert.equal(d3.field2, "b");
+                            assert.equal(this.data.field1, 2);
+                            assert.equal(this.data.field2, "b");
+                        });
                     });
+
+                    assert.equal(d1.field1, 2);
+                    assert.equal(d1.field2, "b");
+                    assert.equal(this.data.field1, 2);
+                    assert.equal(this.data.field2, "b");
                 });
+
+                assert.equal(this.data.field1, 2);
+                assert.equal(this.data.field2, "b");
             }
         }
         const store = new S({field1: 0});
         store.action1();
     });
 
-    it("changes done by nested actions will afterwards be visible in outer actions", function (done) {
-        class S extends Store<{ field1?: number }> {
+    it("changes from nested action are pushed to select-streams", function () {
+        class S extends Store<{ field1: number, field2?: string }> {
             action1() {
-                this.action("outer", data => {
-                    data.field1 = 1;
-                    assert.equal(data.field1, 1);
-                    this.action("inner", data => {
-                        assert.equal(data.field1, 1);
-                        data.field1 = 2;
-                        assert.equal(data.field1, 2);
+                this.action("a1", d1 => {
+                    d1.field1 = 1;
+                    d1.field2 = "a";
+                    this.action("a2", d2 => {
+                        d2.field1 = 2;
+                        d2.field2 = "b";
+                        this.action("a3", d2 => {
+                            d2.field1 = 3;
+                            d2.field2 = "c";
+                        });
                     });
-                    assert.equal(data.field1, 2);
-                    done();
+                    d1.field2 = "aa";
                 });
             }
         }
         const store = new S({field1: 0});
+        const calls: any[] = [];
+        store.select("field1", "field2")
+                .subscribe(s => {
+                    calls.push([s.data.field1, s.data.field2]);
+                });
         store.action1();
+
+        assert.deepEqual(calls, [
+            [0, undefined],
+            [3, "aa"]
+        ]);
+    });
+
+    // it("changes done by nested actions will afterwards be visible in outer actions", function (done) {
+    //     class S extends Store<{ field1?: number }> {
+    //         action1() {
+    //             this.action("outer", data => {
+    //                 this.action("inner", data => {
+    //                     data.field1 = 1;
+    //                 });
+    //                 assert.equal(data.field1, 1);
+    //                 done();
+    //             });
+    //         }
+    //     }
+    //     const store = new S({field1: 0});
+    //     store.action1();
+    // });
+
+    it("this.data must not be modified between actions", function () {
+        class S extends Store<{ field1: number }> {
+            action1() {
+                this.action("action", d => {
+                    d.field1++;
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        assert.equal(store.data.field1, 0);
+        store.action1();
+        assert.equal(store.data.field1, 1);
+        store.data.field1++;
+        assert.throws(() => store.action1());
+    });
+
+    it("this.data must not be modified during an action", function () {
+        class S extends Store<{ field1?: number }> {
+            action1() {
+                assert.equal(this.data.field1, 0);
+                this.action("action1", data => {
+                    data.field1 = 1;
+                    this.data.field1 = 2;
+                });
+            }
+        }
+        const store = new S({field1: 0});
+        assert.throws(() => store.action1());
     });
 
     it("nested actions can be asynchronous", function (done) {
@@ -207,7 +307,7 @@ describe("Store", function () {
         store.action1();
     });
 
-    it("actions must not modify nested fields", function (done) {
+    it("actions must not modify nested fields via action param", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
                 this.action("action", data => {
@@ -216,26 +316,18 @@ describe("Store", function () {
             }
         }
         const store = new S({field1: []});
-        try {
-            store.action1();
-        } catch (e) {
-            done();
-        }
+        assert.throws(() => store.action1());
     });
 
-    it("data must not be modified between actions", function () {
-        class S extends Store<{ field1: number }> {
+    it("actions must not modify nested fields via this.data", function () {
+        class S extends Store<{ field1: number[] }> {
             action1() {
-                this.action("action", d => {
-                    d.field1++;
+                this.action("action", () => {
+                    this.data.field1.push(1);
                 });
             }
         }
-        const store = new S({field1: 0});
-        assert.equal(store.data.field1, 0);
-        store.action1();
-        assert.equal(store.data.field1, 1);
-        store.data.field1++;
+        const store = new S({field1: []});
         assert.throws(() => store.action1());
     });
 
@@ -273,7 +365,7 @@ describe("Store", function () {
                 this.action("action", data => {
                     data.field3.push(1);
                 }, {
-                    deepCloneFields: ["field1", "field2", "field3"],
+                    deepCloneFields: ["field2", "field3"],
                     afterAction: (store, data, modifiedFields, newFields) => {
                         assert.isFalse(modifiedFields.has("field1"));
                         assert.isFalse(newFields.has("field1"));
@@ -355,7 +447,7 @@ describe("Store", function () {
     });
 
     it("selectNonNil() emits a value once all selected fields are nonNil", function (done) {
-        class S extends Store<{ field1: number | null}> {
+        class S extends Store<{ field1: number | null }> {
             action1() {
                 this.action("load field1", d => {
                     d.field1 = 1;
