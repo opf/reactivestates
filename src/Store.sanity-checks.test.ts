@@ -67,7 +67,6 @@ describe("Store - Sanity Checks", function () {
             action1() {
                 this.action("action", (d) => {
                     this.data.field1.push(1);
-                    console.log(d);
                 }, {
                     deepCloneFields: ["field1"]
                 });
