@@ -3,10 +3,7 @@ import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
-import {
-    LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction,
-    logStoreEvent
-} from "./StoreLog";
+import {LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction, logStoreEvent} from "./StoreLog";
 
 let developmentMode = false;
 
@@ -18,6 +15,7 @@ export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 export interface ActionOptions<T> {
     deepCloneFields?: (keyof T)[];
     afterAction?: (store: Store<T>, data: T, modifiedFields: Set<string>, newFields: Set<string>) => void;
+    log?: boolean;
 }
 
 export class SelectEvent<T> {
@@ -239,7 +237,9 @@ export abstract class Store<T> {
             }
         });
 
-        logStoreEvent(logEvent);
+        if (options.log !== false) {
+            logStoreEvent(logEvent);
+        }
 
         this.actionCompleted.next(newAndChangedFields as any);
 
