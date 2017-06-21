@@ -57,8 +57,6 @@ export abstract class Store<T> {
 
     private actionDataState: T | null = null;
 
-    private actionNameStack: string[] = [];
-
     private actionCompleted = new Subject<Set<keyof T>>();
 
     private actionStackCompletedTrigger = new Subject<any>();
@@ -141,7 +139,12 @@ export abstract class Store<T> {
 
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
-        const outerActionData: any = this.actionDataState !== null ? this.actionDataState : this.dataState;
+        let outerActionData: any = this.actionDataState;
+        let isRootAction = false;
+        if (this.actionDataState === null) {
+            isRootAction = true;
+            outerActionData = this.dataState;
+        }
 
         // in devMode: remember state to check if the action deeply change anything (1/2)
         let outerDataCopy: any;
@@ -171,7 +174,7 @@ export abstract class Store<T> {
 
         this.actionDataState = innerData;
 
-        this.actionNameStack.push(name);
+        // this.actionNameStack.push(name);
         let result: R;
         try {
             result = fn.apply(this, [innerData]);
@@ -179,7 +182,6 @@ export abstract class Store<T> {
         finally {
             this.dataState = outerActionData;
             this.actionDataState = outerActionData;
-            this.actionNameStack.pop();
         }
 
         // in devMode: check if fields were added to the defensiveProxy
@@ -194,7 +196,7 @@ export abstract class Store<T> {
         if (developmentMode) {
             outerDataWasModified = !_.isEqual(outerActionData, outerDataCopy);
             if (outerDataWasModified) {
-                throw new Error("action mutated data");
+                throw new Error(`action '${name}' mutated data`);
             }
         }
 
@@ -240,9 +242,6 @@ export abstract class Store<T> {
         logStoreEvent(logEvent);
 
         this.actionCompleted.next(newAndChangedFields as any);
-        if (this.actionNameStack.length === 0) {
-            this.actionStackCompletedTrigger.next();
-        }
 
         if (options.afterAction) {
             options.afterAction(this, innerData, changedFields, newFields);
@@ -251,6 +250,10 @@ export abstract class Store<T> {
         if (developmentMode) {
             this.dataAfterLastAction = _.cloneDeep(this.dataState);
             this.nameOfLastAction = name;
+        }
+
+        if (isRootAction) {
+            this.actionStackCompletedTrigger.next();
         }
 
         return result;

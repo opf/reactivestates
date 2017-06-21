@@ -65,8 +65,9 @@ describe("Store - Sanity Checks", function () {
     it.skip("this.data (with deepCloneFields enabled) must not be modified deeply", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
-                this.action("action", () => {
+                this.action("action", (d) => {
                     this.data.field1.push(1);
+                    console.log(d);
                 }, {
                     deepCloneFields: ["field1"]
                 });

@@ -120,7 +120,7 @@ describe("Store", function () {
     });
 
     it("changes from actions are visible inside nested actions via action data param and this.data", function () {
-        class S extends Store<{ field1: number, field2?: string }> {
+        class S extends Store<{ field1: number, field2?: string, field3: number[]}> {
             action1() {
                 this.action("a1", d1 => {
                     d1.field1 = 1;
@@ -137,29 +137,37 @@ describe("Store", function () {
 
                         d2.field1 = 2;
                         d2.field2 = "b";
+                        d2.field3.push(99);
 
                         assert.equal(this.data.field1, 2);
                         assert.equal(this.data.field2, "b");
+                        assert.deepEqual(this.data.field3, [99]);
 
                         this.action("a3", d3 => {
                             assert.equal(d3.field1, 2);
                             assert.equal(d3.field2, "b");
+                            assert.deepEqual(d3.field3, [99]);
                             assert.equal(this.data.field1, 2);
                             assert.equal(this.data.field2, "b");
+                            assert.deepEqual(this.data.field3, [99]);
                         });
+                    }, {
+                        deepCloneFields: ["field3"]
                     });
 
                     assert.equal(d1.field1, 2);
                     assert.equal(d1.field2, "b");
+                    assert.deepEqual(d1.field3, [99]);
                     assert.equal(this.data.field1, 2);
                     assert.equal(this.data.field2, "b");
+                    assert.deepEqual(this.data.field3, [99]);
                 });
 
                 assert.equal(this.data.field1, 2);
                 assert.equal(this.data.field2, "b");
             }
         }
-        const store = new S({field1: 0});
+        const store = new S({field1: 0, field3: []});
         store.action1();
     });
 
