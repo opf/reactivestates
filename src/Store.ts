@@ -152,12 +152,12 @@ export abstract class Store<T> {
 
         // shallow/deep clone for action
         const innerData: any = _.clone(outerActionData);
-        let deepCloneFields = new Set<string>();
+        let deepClonedFields = new Set<string>();
         if (options.deepCloneFields) {
             options.deepCloneFields.forEach(fieldName => {
                 if (_.has(outerActionData, fieldName)) {
                     innerData[fieldName] = _.cloneDeep(outerActionData[fieldName]);
-                    deepCloneFields.add(fieldName);
+                    deepClonedFields.add(fieldName);
                 } else {
                     throw new Error(`Can't deepCloneField '${fieldName}'. Field does not exist.`);
                 }
@@ -212,7 +212,7 @@ export abstract class Store<T> {
             if (_.hasIn(outerActionData, fieldName)) {
                 const valueInOrigin = outerActionData[fieldName];
 
-                const eq = deepCloneFields.has(fieldName) ? _.isEqual : _.eq;
+                const eq = deepClonedFields.has(fieldName) ? _.isEqual : _.eq;
                 if (!eq(value, valueInOrigin)) {
                     // field changed
                     this.stateField(fieldName as any).putValue(value);
