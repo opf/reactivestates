@@ -253,6 +253,7 @@ export abstract class Store<T> {
         }
 
         if (isRootAction) {
+            this.actionDataState = null;
             this.actionStackCompletedTrigger.next();
         }
 
