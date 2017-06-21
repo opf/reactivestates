@@ -126,6 +126,7 @@ export abstract class Store<T> {
             const invalidDataChange = this.dataAfterLastAction !== null
                     && !invalidDataModificationComparator(this.dataState, this.dataAfterLastAction);
             if (invalidDataChange) {
+                this.dataAfterLastAction = this.data; // avoid repeating error messages
                 throw logInvalidStateChangeOutsideAction(
                         this.nameOfLastAction!, currentActionName, this.dataAfterLastAction, this.dataState);
             }
