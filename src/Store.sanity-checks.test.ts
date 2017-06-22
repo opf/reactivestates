@@ -30,7 +30,7 @@ describe("Store - Sanity Checks", function () {
                 assert.equal(this.data.field1, 0);
                 this.action("action1", data => {
                     data.field1 = 1;
-                    this.data.field1 = 2;
+                    this.data.field1 = 1;
                 });
             }
         }
@@ -62,10 +62,10 @@ describe("Store - Sanity Checks", function () {
         assert.throws(() => store.action1());
     });
 
-    it.skip("this.data (with deepCloneFields enabled) must not be modified deeply", function () {
+    it("this.data (with deepCloneFields enabled) must not be modified deeply", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
-                this.action("action", (d) => {
+                this.action("action", () => {
                     this.data.field1.push(1);
                 }, {
                     deepCloneFields: ["field1"]

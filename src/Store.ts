@@ -5,6 +5,8 @@ import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
 import {LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction, logStoreEvent} from "./StoreLog";
 
+declare const Proxy: any;
+
 let developmentMode = false;
 
 let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean
@@ -44,6 +46,31 @@ function createInputState(name: string) {
     is.name = name;
     is.logEnabled = false;
     return is;
+}
+
+function createDefensiveProxy<T>(currentActionName: string, source: T): { proxy: T, accessedMembers: any } {
+    const accessedMembers: any = {};
+    const accessedMembersCopy: any = {};
+    const proxyHandler = {
+        get: function (target: any, key: string) {
+            let cloned = _.cloneDeep(target[key]);
+            if (_.has(accessedMembers, key)) {
+                if (!_.isEqual(accessedMembers[key], accessedMembersCopy[key])) {
+                    throw logInvalidDataChangeInsideAction(currentActionName, key);
+                }
+            }
+            accessedMembers[key] = cloned;
+            accessedMembersCopy[key] = _.cloneDeep(cloned);
+            return cloned;
+        },
+        set: function (target: any, key: string) {
+            throw logInvalidDataChangeInsideAction(currentActionName, key);
+        }
+    };
+    return {
+        proxy: new Proxy(source, proxyHandler),
+        accessedMembers
+    };
 }
 
 
@@ -133,8 +160,8 @@ export abstract class Store<T> {
         }
     }
 
-    protected action<R>(name: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
-        this.checkForInvalidStateChangeBetweenActions(name);
+    protected action<R>(actionName: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
+        this.checkForInvalidStateChangeBetweenActions(actionName);
 
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
@@ -167,13 +194,10 @@ export abstract class Store<T> {
         }
 
         // set defensive proxy to shield from modifications done via this.data
-        const defensiveProxy: any = {};
-        Object.setPrototypeOf(defensiveProxy, innerData);
-        this.dataState = defensiveProxy;
-
+        const defensiveProxy = createDefensiveProxy(actionName, innerData);
+        this.dataState = defensiveProxy.proxy;
         this.actionDataState = innerData;
 
-        // this.actionNameStack.push(name);
         let result: R;
         try {
             result = fn.apply(this, [innerData]);
@@ -185,17 +209,15 @@ export abstract class Store<T> {
 
         // in devMode: check if fields were added to the defensiveProxy
         if (developmentMode) {
-            let addedMembersInProxy = _.keys(defensiveProxy);
-            if (addedMembersInProxy.length > 0) {
-                throw logInvalidDataChangeInsideAction(name);
-            }
+            // re-get all accessed members to trigger change detection
+            _.keys(defensiveProxy.accessedMembers).forEach(k => _.get(defensiveProxy.proxy, k));
         }
 
         // in devMode: remember state to check if the action deeply change anything (2/2)
         if (developmentMode) {
             outerDataWasModified = !_.isEqual(outerActionData, outerDataCopy);
             if (outerDataWasModified) {
-                throw new Error(`action '${name}' mutated data`);
+                throw new Error(`action '${actionName}' mutated data`);
             }
         }
 
@@ -205,7 +227,7 @@ export abstract class Store<T> {
 
         // Logging
         let stack = new Error().stack;
-        const logEvent = new LogEvent(name, [], stack);
+        const logEvent = new LogEvent(actionName, [], stack);
 
         // Check changes
         _.keysIn(innerData).forEach(fieldName => {
@@ -250,7 +272,7 @@ export abstract class Store<T> {
 
         if (developmentMode) {
             this.dataAfterLastAction = _.cloneDeep(this.dataState);
-            this.nameOfLastAction = name;
+            this.nameOfLastAction = actionName;
         }
 
         if (isRootAction) {

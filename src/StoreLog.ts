@@ -55,8 +55,8 @@ export function logInvalidStateChangeOutsideAction(action1: string, action2: str
     return new Error(msg);
 }
 
-export function logInvalidDataChangeInsideAction(action: string): Error {
-    const msg = `data was modified via 'this.data' inside action '${action}'`;
+export function logInvalidDataChangeInsideAction(currentActionName: string, key: string): Error {
+    const msg = `invalid attempt to mutate this.data during action '${currentActionName}'`;
     if (isLogEnabled()) {
         if (isBrowser()) {
             console.error("[RS] " + msg);
