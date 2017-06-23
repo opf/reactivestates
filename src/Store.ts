@@ -4,10 +4,13 @@ import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
 import {LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction, logStoreEvent} from "./StoreLog";
+import {wrapObservableWithMemoryLeakDetection} from "./ObservableWithMemoryLeakDetection";
 
 declare const Proxy: any;
 
 let developmentMode = false;
+
+let memoryLeakDetection = false;
 
 let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean
         = (v1: any, v2: any) => _.isEqual(v1, v2);
@@ -39,6 +42,10 @@ export function setInvalidDataModificationComparator<T>(fn: (v1: T, v2: T) => bo
 export function enableDevelopmentMode(enable: boolean = true) {
     developmentMode = enable;
     enableReactiveStatesLogging(enable);
+}
+
+export function enableMemoryLeakDetection(enable: boolean = true) {
+    memoryLeakDetection = true;
 }
 
 function createInputState(name: string) {
@@ -124,12 +131,18 @@ export abstract class Store<T> {
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        return this.actionCompletedBuffered
+        const selected = this.actionCompletedBuffered
                 .filter(changedFields => {
                     return _.some(fields, f => changedFields.has(f));
                 })
                 .startWith(new Set(fields))
                 .map(fields => new SelectEvent(this.data, new Set(fields)));
+
+        if (memoryLeakDetection) {
+            return wrapObservableWithMemoryLeakDetection(selected);
+        } else {
+            return selected;
+        }
     }
 
     selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {

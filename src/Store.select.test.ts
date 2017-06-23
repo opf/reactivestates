@@ -1,5 +1,6 @@
+import * as _ from "lodash";
 import {enableReactiveStatesLogging} from "./log";
-import {ActionOptions, enableDevelopmentMode, Store} from "./Store";
+import {enableDevelopmentMode, enableMemoryLeakDetection, Store} from "./Store";
 
 describe("Store - select", function () {
 
@@ -116,6 +117,25 @@ describe("Store - select", function () {
         store.selectNonNil("field1")
                 .subscribe(s => done());
         store.action1();
+    });
+
+    it("detect memory leak subscriptions", function (done) {
+        enableMemoryLeakDetection();
+
+        console.log = (...msg: any[]) => {
+            assert.include(msg.join(""), "leak");
+            done();
+        };
+
+        class S extends Store<{ field1: number }> {
+        }
+        const store = new S({field1: 1});
+
+        function subscribe() {
+            store.selectNonNil("field1").subscribe();
+        }
+
+        _.times(2, () => subscribe());
     });
 
 });
