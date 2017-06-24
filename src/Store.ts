@@ -62,16 +62,19 @@ function createDefensiveProxy<T>(source: T): { proxy: T, accessedMembers: any } 
         get: function (target: any, key: string) {
             let cloned = _.cloneDeep(target[key]);
             if (_.has(accessedMembers, key)) {
-                if (!_.isEqual(accessedMembers[key], accessedMembersCopy[key])) {
-                    throw logInvalidDataChange(key);
+                let version1 = accessedMembers[key];
+                let version2 = accessedMembersCopy[key];
+                if (!_.isEqual(version1, version2)) {
+                    throw logInvalidDataChange(key, version1, version2);
                 }
             }
             accessedMembers[key] = cloned;
             accessedMembersCopy[key] = _.cloneDeep(cloned);
             return cloned;
         },
-        set: function (target: any, key: string) {
-            throw logInvalidDataChange(key);
+        set: function (target: any, key: string, version2: string) {
+            let version1 = accessedMembers[key];
+            throw logInvalidDataChange(key, version1, version2);
         }
     };
     return {

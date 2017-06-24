@@ -43,23 +43,23 @@ export function defaultLog(event: LogEvent) {
     }
 }
 
-export function logInvalidStateChangeOutsideAction(action1: string, action2: string, state1: any, state2: any): Error {
-    const msg = `data was modified between actions '${action1}' and '${action2}'`;
-    if (isLogEnabled()) {
-        if (isBrowser()) {
-            console.error("[RS] " + msg + "\n%o %o", state1, state2);
-        } else {
-            console.log("[RS] Error: " + msg);
-        }
-    }
-    return new Error(msg);
-}
+// export function logInvalidStateChangeOutsideAction(action1: string, action2: string, state1: any, state2: any): Error {
+//     const msg = `data was modified between actions '${action1}' and '${action2}'`;
+//     if (isLogEnabled()) {
+//         if (isBrowser()) {
+//             console.error("[RS] " + msg + "\n%o %o", state1, state2);
+//         } else {
+//             console.log("[RS] Error: " + msg);
+//         }
+//     }
+//     return new Error(msg);
+// }
 
-export function logInvalidDataChange(key: string): Error {
-    const msg = `invalid attempt to mutate this.data field '${key}'`;
+export function logInvalidDataChange(key: string, version1: any, version2: any): Error {
+    const msg = `invalid attempt to mutate this.data.'${key}'`;
     if (isLogEnabled()) {
         if (isBrowser()) {
-            console.error("[RS] " + msg);
+            console.error("[RS] " + msg, version1, version2);
         } else {
             console.log("[RS] Error: " + msg);
         }
