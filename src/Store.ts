@@ -134,7 +134,7 @@ export abstract class Store<T> {
         this.states = states;
     }
 
-    get data(): T {
+    get data(): Readonly<T> {
         if (developmentMode && this.lastCreatedDefensiveProxy !== null) {
             const proxy = this.lastCreatedDefensiveProxy;
             _.keys(proxy.accessedMembers).forEach(k => _.get(proxy.proxy, k));
