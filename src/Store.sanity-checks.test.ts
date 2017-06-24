@@ -28,7 +28,7 @@ describe("Store - Sanity Checks", function () {
         store.action1();
 
         assert.throws(
-                () => store.data.field1++,
+                () => (store.data as any).field1++,
                 "invalid attempt to mutate this.data");
     });
 
@@ -60,7 +60,7 @@ describe("Store - Sanity Checks", function () {
                 assert.equal(this.data.field1, 0);
                 this.action("action1", data => {
                     data.field1 = 1;
-                    this.data.field1 = 1;
+                    (this.data as any).field1 = 1;
                 });
             }
         }
