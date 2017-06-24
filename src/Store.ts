@@ -3,8 +3,8 @@ import {Observable} from "rxjs/Observable";
 import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
-import {LogEvent, logInvalidDataChangeInsideAction, logInvalidStateChangeOutsideAction, logStoreEvent} from "./StoreLog";
 import {wrapObservableWithMemoryLeakDetection} from "./ObservableWithMemoryLeakDetection";
+import {LogEvent, logInvalidDataChange, logStoreEvent} from "./StoreLog";
 
 declare const Proxy: any;
 
@@ -55,7 +55,7 @@ function createInputState(name: string) {
     return is;
 }
 
-function createDefensiveProxy<T>(currentActionName: string, source: T): { proxy: T, accessedMembers: any } {
+function createDefensiveProxy<T>(source: T): { proxy: T, accessedMembers: any } {
     const accessedMembers: any = {};
     const accessedMembersCopy: any = {};
     const proxyHandler = {
@@ -63,7 +63,7 @@ function createDefensiveProxy<T>(currentActionName: string, source: T): { proxy:
             let cloned = _.cloneDeep(target[key]);
             if (_.has(accessedMembers, key)) {
                 if (!_.isEqual(accessedMembers[key], accessedMembersCopy[key])) {
-                    throw logInvalidDataChangeInsideAction(currentActionName, key);
+                    throw logInvalidDataChange(key);
                 }
             }
             accessedMembers[key] = cloned;
@@ -71,7 +71,7 @@ function createDefensiveProxy<T>(currentActionName: string, source: T): { proxy:
             return cloned;
         },
         set: function (target: any, key: string) {
-            throw logInvalidDataChangeInsideAction(currentActionName, key);
+            throw logInvalidDataChange(key);
         }
     };
     return {
@@ -87,7 +87,13 @@ export abstract class Store<T> {
 
     private dataState: T;
 
-    private actionDataState: T | null = null;
+    private lastCreatedDefensiveProxy: { proxy: T, accessedMembers: any } | null = null;
+
+    private isInsideAction = false;
+
+    // private actionDataState: T;
+
+    // private actionsStack: string[] = [];
 
     private actionCompleted = new Subject<Set<keyof T>>();
 
@@ -103,9 +109,8 @@ export abstract class Store<T> {
     ;
 
     // for debugging in dev mode --------------------------------
-    private dataAfterLastAction: T | null = null;
-
-    private nameOfLastAction: string | null = null;
+    // private dataAfterLastAction: T | null = null;
+    // private nameOfLastAction: string | null = null;
     // ----------------------------------------------------------
 
     /**
@@ -127,7 +132,15 @@ export abstract class Store<T> {
     }
 
     get data(): T {
-        return this.dataState;
+        if (developmentMode && this.lastCreatedDefensiveProxy !== null) {
+            const proxy = this.lastCreatedDefensiveProxy;
+            _.keys(proxy.accessedMembers).forEach(k => _.get(proxy.proxy, k));
+        }
+
+        const defensiveProxy = createDefensiveProxy(this.dataState);
+        this.lastCreatedDefensiveProxy = defensiveProxy;
+        return defensiveProxy.proxy;
+        // return this.dataState;
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
@@ -161,44 +174,47 @@ export abstract class Store<T> {
         return {};
     }
 
-    private checkForInvalidStateChangeBetweenActions(currentActionName: string) {
-        if (developmentMode) {
-            const invalidDataChange = this.dataAfterLastAction !== null
-                    && !invalidDataModificationComparator(this.dataState, this.dataAfterLastAction);
-            if (invalidDataChange) {
-                this.dataAfterLastAction = this.dataState; // avoid repeating error messages
-                throw logInvalidStateChangeOutsideAction(
-                        this.nameOfLastAction!, currentActionName, this.dataAfterLastAction, this.dataState);
-            }
-        }
-    }
+    // private checkForInvalidStateChangeBetweenActions(currentActionName: string) {
+    //     if (developmentMode && this.dataAfterLastAction !== null) {
+    //
+    //         const invalidDataChange =
+    //                 !invalidDataModificationComparator(this.dataState, this.dataAfterLastAction);
+    //
+    //         if (invalidDataChange) {
+    //             this.dataAfterLastAction = this.dataState; // avoid repeating error messages
+    //             throw logInvalidStateChangeOutsideAction(
+    //                     this.nameOfLastAction!, currentActionName, this.dataAfterLastAction, this.dataState);
+    //         }
+    //     }
+    // }
 
     protected action<R>(actionName: string, fn: (data: T, bla: any) => R, actionOptions?: ActionOptions<T>): R {
-        this.checkForInvalidStateChangeBetweenActions(actionName);
+        // this.checkForInvalidStateChangeBetweenActions(actionName);
 
         const options = _.merge(this.defaultActionOptions(), actionOptions);
 
-        let outerActionData: any = this.actionDataState;
-        let isRootAction = false;
-        if (this.actionDataState === null) {
-            isRootAction = true;
-            outerActionData = this.dataState;
-        }
+        let outerData: any = this.dataState;
+        let isRootAction = !this.isInsideAction;
+        this.isInsideAction = true;
+        // if (this.actionsStack.length === 0) {
+        //     isRootAction = true;
+        //     outerData = this.dataState;
+        // }
 
         // in devMode: remember state to check if the action deeply change anything (1/2)
-        let outerDataCopy: any;
         let outerDataWasModified = false;
+        let outerDataCopy: any;
         if (developmentMode) {
-            outerDataCopy = _.cloneDeep(outerActionData);
+            outerDataCopy = _.cloneDeep(outerData);
         }
 
         // shallow/deep clone for action
-        const innerData: any = _.clone(outerActionData);
+        const innerData: any = _.clone(outerData);
         let deepClonedFields = new Set<string>();
         if (options.deepCloneFields) {
             options.deepCloneFields.forEach(fieldName => {
-                if (_.has(outerActionData, fieldName)) {
-                    innerData[fieldName] = _.cloneDeep(outerActionData[fieldName]);
+                if (_.has(outerData, fieldName)) {
+                    innerData[fieldName] = _.cloneDeep(outerData[fieldName]);
                     deepClonedFields.add(fieldName);
                 } else {
                     throw new Error(`Can't deepCloneField '${fieldName}'. Field does not exist.`);
@@ -207,28 +223,31 @@ export abstract class Store<T> {
         }
 
         // set defensive proxy to shield from modifications done via this.data
-        const defensiveProxy = createDefensiveProxy(actionName, innerData);
-        this.dataState = defensiveProxy.proxy;
-        this.actionDataState = innerData;
+        // const defensiveProxy = createDefensiveProxy(actionName, innerData);
+        // this.dataState = defensiveProxy.proxy;
+        // this.actionDataState = innerData;
+        this.dataState = innerData;
 
         let result: R;
+        // this.actionsStack.push(actionName);
         try {
             result = fn.apply(this, [innerData]);
         }
         finally {
-            this.dataState = outerActionData;
-            this.actionDataState = outerActionData;
+            // this.actionsStack.pop();
+            this.dataState = outerData;
+            // this.actionDataState = outerData;
         }
 
         // in devMode: check if fields were added to the defensiveProxy
         if (developmentMode) {
             // re-get all accessed members to trigger change detection
-            _.keys(defensiveProxy.accessedMembers).forEach(k => _.get(defensiveProxy.proxy, k));
+            // _.keys(defensiveProxy.accessedMembers).forEach(k => _.get(defensiveProxy.proxy, k));
         }
 
         // in devMode: remember state to check if the action deeply change anything (2/2)
         if (developmentMode) {
-            outerDataWasModified = !_.isEqual(outerActionData, outerDataCopy);
+            outerDataWasModified = !_.isEqual(outerData, outerDataCopy);
             if (outerDataWasModified) {
                 throw new Error(`action '${actionName}' mutated data`);
             }
@@ -245,15 +264,15 @@ export abstract class Store<T> {
         // Check changes
         _.keysIn(innerData).forEach(fieldName => {
             const value = innerData[fieldName];
-            if (_.hasIn(outerActionData, fieldName)) {
-                const valueInOrigin = outerActionData[fieldName];
+            if (_.hasIn(outerData, fieldName)) {
+                const valueInOrigin = outerData[fieldName];
 
                 const eq = deepClonedFields.has(fieldName) ? _.isEqual : _.eq;
                 if (!eq(value, valueInOrigin)) {
                     // field changed
                     this.stateField(fieldName as any).putValue(value);
 
-                    outerActionData[fieldName] = value;
+                    outerData[fieldName] = value;
                     changedFields.add(fieldName);
                     newAndChangedFields.add(fieldName);
 
@@ -265,7 +284,7 @@ export abstract class Store<T> {
                 }
             } else {
                 // field was added
-                outerActionData[fieldName] = value;
+                outerData[fieldName] = value;
                 newFields.add(fieldName);
                 newAndChangedFields.add(fieldName);
                 this.stateField(fieldName as any).putValue(value);
@@ -284,12 +303,14 @@ export abstract class Store<T> {
         }
 
         if (developmentMode) {
-            this.dataAfterLastAction = _.cloneDeep(this.dataState);
-            this.nameOfLastAction = actionName;
+            this.data; // access getter to trigger modification check
+        //     this.dataAfterLastAction = _.cloneDeep(this.dataState);
+        //     this.nameOfLastAction = actionName;
         }
 
         if (isRootAction) {
-            this.actionDataState = null;
+        //     this.actionDataState = this.dataState;
+            this.isInsideAction = false;
             this.actionStackCompletedTrigger.next();
         }
 

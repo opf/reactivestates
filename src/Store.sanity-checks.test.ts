@@ -8,20 +8,50 @@ describe("Store - Sanity Checks", function () {
         enableReactiveStatesLogging(false);
     });
 
-    it("this.data must not be modified between actions", function () {
+    it("this.data must not be modified", function () {
         class S extends Store<{ field1: number }> {
             action1() {
-                this.action("action", d => {
+                this.action("action1", d => {
+                    d.field1++;
+                    this.action2();
+                });
+            }
+
+            action2() {
+                this.action("action2", d => {
                     d.field1++;
                 });
             }
         }
         const store = new S({field1: 0});
-        assert.equal(store.data.field1, 0);
         store.action1();
-        assert.equal(store.data.field1, 1);
-        store.data.field1++;
-        assert.throws(() => store.action1());
+        store.action1();
+
+        assert.throws(
+                () => store.data.field1++,
+                "invalid attempt to mutate this.data");
+    });
+
+    it("this.data must not be modified deeply between actions", function () {
+        class S extends Store<{ field1: number[] }> {
+            action1() {
+                this.action("action1", () => {
+                    this.action2();
+                });
+            }
+
+            action2() {
+                this.action("action2", () => {
+                });
+            }
+        }
+        const store = new S({field1: []});
+        store.action1();
+        store.action1();
+        store.data.field1.push(1);
+        assert.throws(
+                () => store.data,
+                "invalid attempt to mutate this.data");
     });
 
     it("this.data must not be modified during an action", function () {
@@ -35,7 +65,9 @@ describe("Store - Sanity Checks", function () {
             }
         }
         const store = new S({field1: 0});
-        assert.throws(() => store.action1());
+        assert.throws(
+                () => store.action1(),
+                "invalid attempt to mutate this.data");
     });
 
     it("local data must not be modified deeply", function () {
@@ -50,7 +82,7 @@ describe("Store - Sanity Checks", function () {
         assert.throws(() => store.action1());
     });
 
-    it("this.data must not be modified deeply", function () {
+    it("this.data must not be modified deeply during an action", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
                 this.action("action", () => {
@@ -59,7 +91,9 @@ describe("Store - Sanity Checks", function () {
             }
         }
         const store = new S({field1: []});
-        assert.throws(() => store.action1());
+        assert.throws(
+                () => store.action1(),
+                "invalid attempt to mutate this.data");
     });
 
     it("this.data (with deepCloneFields enabled) must not be modified deeply", function () {
@@ -73,7 +107,9 @@ describe("Store - Sanity Checks", function () {
             }
         }
         const store = new S({field1: []});
-        assert.throws(() => store.action1());
+        assert.throws(
+                () => store.action1(),
+                "invalid attempt to mutate this.data");
     });
 
 });
