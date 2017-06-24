@@ -64,7 +64,7 @@ function createDefensiveProxy<T>(source: T): { proxy: T, accessedMembers: any } 
             if (_.has(accessedMembers, key)) {
                 let version1 = accessedMembers[key];
                 let version2 = accessedMembersCopy[key];
-                if (!_.isEqual(version1, version2)) {
+                if (!invalidDataModificationComparator(version1, version2)) {
                     throw logInvalidDataChange(key, version1, version2);
                 }
             }
