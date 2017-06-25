@@ -31,7 +31,7 @@ describe("Store - select", function () {
         const calls: any[] = [];
         store.select("field1", "field2")
                 .subscribe(s => {
-                    calls.push([s.data.field1, s.data.field2]);
+                    calls.push([s.state.field1, s.state.field2]);
                 });
         store.action1();
 
@@ -60,7 +60,7 @@ describe("Store - select", function () {
         const calls: any[] = [];
         const store = new S({field1: 0});
         store.select("field1")
-                .subscribe(() => calls.push(store.data.field1));
+                .subscribe(() => calls.push(store.state.field1));
         store.action1();
         assert.deepEqual(calls, [0, 1]);
     });
@@ -76,7 +76,7 @@ describe("Store - select", function () {
         const calls: any[] = [];
         const store = new S({field1: 0, field2: 5});
         store.select("field2")
-                .subscribe(() => calls.push(store.data.field2));
+                .subscribe(() => calls.push(store.state.field2));
         store.action1();
         assert.deepEqual(calls, [5]);
     });

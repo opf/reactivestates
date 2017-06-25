@@ -28,7 +28,7 @@ describe("Store - Sanity Checks", function () {
         store.action1();
 
         assert.throws(
-                () => (store.data as any).field1++,
+                () => (store.state as any).field1++,
                 "invalid attempt to mutate this.data");
     });
 
@@ -48,19 +48,19 @@ describe("Store - Sanity Checks", function () {
         const store = new S({field1: []});
         store.action1();
         store.action1();
-        store.data.field1.push(1);
+        store.state.field1.push(1);
         assert.throws(
-                () => store.data,
+                () => store.state,
                 "invalid attempt to mutate this.data");
     });
 
     it("this.data must not be modified during an action", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
-                assert.equal(this.data.field1, 0);
+                assert.equal(this.state.field1, 0);
                 this.action("action1", data => {
                     data.field1 = 1;
-                    (this.data as any).field1 = 1;
+                    (this.state as any).field1 = 1;
                 });
             }
         }
@@ -86,7 +86,7 @@ describe("Store - Sanity Checks", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
                 this.action("action", () => {
-                    this.data.field1.push(1);
+                    this.state.field1.push(1);
                 });
             }
         }
@@ -100,7 +100,7 @@ describe("Store - Sanity Checks", function () {
         class S extends Store<{ field1: number[] }> {
             action1() {
                 this.action("action", () => {
-                    this.data.field1.push(1);
+                    this.state.field1.push(1);
                 }, {
                     deepCloneFields: ["field1"]
                 });
