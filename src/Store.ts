@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 import {Observable} from "rxjs/Observable";
+import {bufferWhen, filter, map, startWith} from "rxjs/operators";
 import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
@@ -12,8 +13,8 @@ let developmentMode = false;
 
 let memoryLeakDetection = false;
 
-let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean
-        = (v1: any, v2: any) => _.isEqual(v1, v2);
+// let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean =
+//     (v1: any, v2: any) => _.isEqual(v1, v2);
 
 export type StateMembers<T> = { [P in keyof T]: InputState<T[P]>; };
 
@@ -35,9 +36,9 @@ export class SelectEvent<T> {
 
 }
 
-export function setInvalidDataModificationComparator<T>(fn: (v1: T, v2: T) => boolean) {
-    invalidDataModificationComparator = fn;
-}
+// export function setInvalidDataModificationComparator<T>(fn: (v1: T, v2: T) => boolean) {
+//     invalidDataModificationComparator = fn;
+// }
 
 export function enableDevelopmentMode(enable: boolean = true) {
     developmentMode = enable;
@@ -62,11 +63,11 @@ function createDefensiveProxy<T>(source: T): { proxy: T, accessedMembers: any } 
         get: function (target: any, key: string) {
             let cloned = _.cloneDeep(target[key]);
             if (_.has(accessedMembers, key)) {
-                let version1 = accessedMembers[key];
-                let version2 = accessedMembersCopy[key];
-                if (!invalidDataModificationComparator(version1, version2)) {
-                    throw logInvalidDataChange(key, version1, version2);
-                }
+                // let version1 = accessedMembers[key];
+                // let version2 = accessedMembersCopy[key];
+                // if (!invalidDataModificationComparator(version1, version2)) {
+                //     throw logInvalidDataChange(key, version1, version2);
+                // }
             }
             accessedMembers[key] = cloned;
             accessedMembersCopy[key] = _.cloneDeep(cloned);
@@ -98,13 +99,13 @@ export abstract class Store<T> {
 
     private actionStackCompletedTrigger = new Subject<any>();
 
-    private actionCompletedBuffered: Observable<Set<keyof T>> = this.actionCompleted
-            .bufferWhen(() => this.actionStackCompletedTrigger)
-            .map(sets => {
-                const all = new Set<any>();
-                sets.forEach(s => s.forEach(k => all.add(k)));
-                return all;
-            });
+    private actionCompletedBuffered: Observable<Set<keyof T>> = this.actionCompleted.pipe(
+        bufferWhen(() => this.actionStackCompletedTrigger),
+        map(sets => {
+            const all = new Set<any>();
+            sets.forEach(s => s.forEach(k => all.add(k)));
+            return all;
+        }));
 
     /**
      * @param data
@@ -137,12 +138,12 @@ export abstract class Store<T> {
     }
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        const selected = this.actionCompletedBuffered
-                .filter(changedFields => {
-                    return fields.length === 0 || _.some(fields, f => changedFields.has(f));
-                })
-                .startWith(new Set(fields))
-                .map(fields => new SelectEvent(this.state, new Set(fields)));
+        const selected = this.actionCompletedBuffered.pipe(
+            filter(changedFields => {
+                return fields.length === 0 || _.some(fields, f => changedFields.has(f));
+            }),
+            startWith(new Set(fields)),
+            map(fields => new SelectEvent(this.state, new Set(fields))));
 
         if (memoryLeakDetection) {
             return wrapObservableWithMemoryLeakDetection(selected);
@@ -152,8 +153,8 @@ export abstract class Store<T> {
     }
 
     selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
-        return this.select(...fields)
-                .filter(s => s.allSelectedFieldsNonNil());
+        return this.select(...fields).pipe(
+            filter(s => s.allSelectedFieldsNonNil()));
     }
 
     stateField<M extends keyof T>(name: M): InputState<T[M]> {

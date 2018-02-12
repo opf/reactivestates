@@ -1,4 +1,5 @@
 import {Observable, Subject} from "rxjs";
+import {filter, takeUntil} from "rxjs/operators";
 import {ReplaySubject} from "rxjs/ReplaySubject";
 import {input, InputState} from "./InputState";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
@@ -57,8 +58,8 @@ export class MultiInputState<T> extends State<Cache<T>, undefined> {
                 newState.name = this.name + "[" + id + "]";
             }
             this.value![id] = newState;
-            newState.changes$()
-                    .takeUntil(this.observeRemove().filter(val => val === id))
+            newState.changes$().pipe(
+                    takeUntil(this.observeRemove().pipe(filter(val => val === id))))
                     .subscribe(val => {
                         this.change$.next([id, val, newState]);
                     });

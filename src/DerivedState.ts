@@ -1,4 +1,5 @@
 import {Observable} from "rxjs";
+import {filter, map} from "rxjs/operators";
 import {AfterConnectFn, AfterDisConnectFn, IsNonValueFn, State} from "./State";
 
 export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
@@ -67,14 +68,16 @@ export function deriveRaw<IT, IX, OT>(state: State<IT, IX>,
 }
 
 export function derive<IT, OT, IX = undefined>(state: State<IT, IX>,
-                                               transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT|undefined>,
+                                               transformer: ($: Observable<IT>, inputState: State<IT, IX>) => Observable<OT | undefined>,
                                                defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
 
-    const values$: Observable<OT> = transformer(
-            state.outputStreamTrailing.filter(v => !state.isNonValue(v)), state);
+    let valueStream$: Observable<IT> = state.outputStreamTrailing.pipe(
+        filter(v => !state.isNonValue(v))) as Observable<IT>;
 
-    const nonValues$: Observable<undefined> =
-            state.outputStreamTrailing.filter(v => state.isNonValue(v)).map(nonValue => undefined);
+    const values$: Observable<OT> = transformer(valueStream$, state) as Observable<OT>;
+    const nonValues$: Observable<undefined> = state.outputStreamTrailing.pipe(
+        filter(v => state.isNonValue(v)),
+        map(_ => undefined));
 
     const source$: Observable<OT | undefined> = Observable.merge(nonValues$, values$);
     const isNonValue = (val: OT | undefined): val is undefined => {

@@ -1,3 +1,4 @@
+import {filter} from "rxjs/operators";
 import {multiInput} from "./MultiInputState";
 
 describe("StateCache", function () {
@@ -57,12 +58,12 @@ describe("StateCache", function () {
         const sm = multiInput<string>();
         sm.get("a").putValue("a");
 
-        sm.observeRemove()
-                .filter(val => val === "a")
-                .subscribe(key => {
-                    assert.equal(key, "a");
-                    done();
-                });
+        sm.observeRemove().pipe(
+            filter(val => val === "a"))
+            .subscribe(key => {
+                assert.equal(key, "a");
+                done();
+            });
 
         sm.remove("a");
 

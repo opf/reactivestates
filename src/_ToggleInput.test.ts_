@@ -1,4 +1,4 @@
-import {toggleInput} from "./ToggleInput";
+import {toggleInput} from "./_ToggleInput";
 
 describe("Toggle", function () {
 

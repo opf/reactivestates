@@ -1,3 +1,4 @@
+import {map} from "rxjs/operators";
 import {derive} from "./DerivedState";
 import {input} from "./InputState";
 import {enableReactiveStatesLogging, setLogger} from "./log";
@@ -14,7 +15,7 @@ describe("log", function () {
         class States extends StatesGroup {
             name = "group1";
             input$ = input<number>();
-            state2 = derive(this.input$, $ => $.map(v => v + 1000));
+            state2 = derive(this.input$, $ => $.pipe(map(v => v + 1000)));
 
             constructor() {
                 super();

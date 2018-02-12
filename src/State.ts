@@ -1,5 +1,6 @@
 import {Observable, ReplaySubject, Subscription} from "rxjs";
 import {Observer} from "rxjs/Observer";
+import {filter, take} from "rxjs/operators";
 import {Subject} from "rxjs/Subject";
 import {logStateChange} from "./log";
 
@@ -29,9 +30,9 @@ export class State<T, X = undefined> {
 
     private outputStream: Subject<T | X> = new ReplaySubject<T | X>(1);
 
-    private value$: Observable<T> = this.outputStream.filter(v => !this.isNonValue(v));
+    private value$: Observable<T> = this.outputStream.pipe(filter(v => !this.isNonValue(v))) as Observable<T>;
 
-    private nonValue$: Observable<X> = this.outputStream.filter(v => this.isNonValue(v));
+    private nonValue$: Observable<X> = this.outputStream.pipe(filter(v => this.isNonValue(v))) as Observable<X>;
 
     constructor(source$: Observable<T | X>,
                 public readonly isNonValue: (val: T | X) => val is X,
@@ -89,7 +90,7 @@ export class State<T, X = undefined> {
     }
 
     public changesPromise(): PromiseLike<T | X> {
-        return this.changes$().take(1).toPromise();
+        return this.changes$().pipe(take(1)).toPromise();
     }
 
     public values$(reason?: string): Observable<T> {
@@ -97,7 +98,7 @@ export class State<T, X = undefined> {
     }
 
     public valuesPromise(): PromiseLike<T | undefined> {
-        return this.values$().take(1).toPromise();
+        return this.values$().pipe(take(1)).toPromise();
     }
 
     public nonValues$(reason?: string): Observable<X> {
@@ -105,7 +106,7 @@ export class State<T, X = undefined> {
     }
 
     public nonValuesPromise(): PromiseLike<T | X> {
-        return this.nonValues$().take(1).toPromise();
+        return this.nonValues$().pipe(take(1)).toPromise();
     }
 
     public get value(): T | X {

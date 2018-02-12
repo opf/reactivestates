@@ -1,3 +1,4 @@
+import {take} from "rxjs/operators";
 import {input} from "./InputState";
 import {Observable} from "rxjs";
 
@@ -93,7 +94,7 @@ describe("InputState", function () {
 
     it("putFromPromise", function (done) {
         const s1 = input(0);
-        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
+        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.hasValue());
         s1.values$().subscribe(val => {
             assert.equal(val, 0);
@@ -104,7 +105,7 @@ describe("InputState", function () {
 
     it("hasActivePromiseRequest", function (done) {
         const s1 = input(0);
-        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
+        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.hasValue());
         assert.isTrue(s1.hasActivePromiseRequest());
 
@@ -119,7 +120,7 @@ describe("InputState", function () {
     it("isPristine", function () {
         const s1 = input<number>();
         assert.isTrue(s1.isPristine());
-        s1.clearAndPutFromPromise(Observable.timer(0).take(1).toPromise());
+        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.isPristine());
         assert.isFalse(s1.hasValue());
     });
@@ -127,7 +128,7 @@ describe("InputState", function () {
     it("putFromPromiseIfPristine", function (done) {
         const s1 = input<number>();
 
-        s1.putFromPromiseIfPristine(() => Observable.timer(0).take(1).toPromise());
+        s1.putFromPromiseIfPristine(() => Observable.timer(0).pipe(take(1)).toPromise());
         assert.isTrue(s1.hasActivePromiseRequest());
         assert.isFalse(s1.hasValue());
 

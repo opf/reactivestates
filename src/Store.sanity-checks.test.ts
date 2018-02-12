@@ -32,28 +32,6 @@ describe("Store - Sanity Checks", function () {
                 "invalid attempt to mutate this.data");
     });
 
-    it("this.data must not be modified deeply between actions", function () {
-        class S extends Store<{ field1: number[] }> {
-            action1() {
-                this.action("action1", () => {
-                    this.action2();
-                });
-            }
-
-            action2() {
-                this.action("action2", () => {
-                });
-            }
-        }
-        const store = new S({field1: []});
-        store.action1();
-        store.action1();
-        store.state.field1.push(1);
-        assert.throws(
-                () => store.state,
-                "invalid attempt to mutate this.data");
-    });
-
     it("this.data must not be modified during an action", function () {
         class S extends Store<{ field1?: number }> {
             action1() {
@@ -80,36 +58,6 @@ describe("Store - Sanity Checks", function () {
         }
         const store = new S({field1: []});
         assert.throws(() => store.action1());
-    });
-
-    it("this.data must not be modified deeply during an action", function () {
-        class S extends Store<{ field1: number[] }> {
-            action1() {
-                this.action("action", () => {
-                    this.state.field1.push(1);
-                });
-            }
-        }
-        const store = new S({field1: []});
-        assert.throws(
-                () => store.action1(),
-                "invalid attempt to mutate this.data");
-    });
-
-    it("this.data (with deepCloneFields enabled) must not be modified deeply", function () {
-        class S extends Store<{ field1: number[] }> {
-            action1() {
-                this.action("action", () => {
-                    this.state.field1.push(1);
-                }, {
-                    deepCloneFields: ["field1"]
-                });
-            }
-        }
-        const store = new S({field1: []});
-        assert.throws(
-                () => store.action1(),
-                "invalid attempt to mutate this.data");
     });
 
 });

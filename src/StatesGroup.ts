@@ -1,9 +1,8 @@
-import {Injectable} from "./Context";
 import {State} from "./State";
 
 let nextStoreId = 0;
 
-export class StatesGroup implements Injectable {
+export class StatesGroup {
 
     readonly storeId = nextStoreId++;
 

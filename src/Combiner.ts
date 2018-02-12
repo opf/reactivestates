@@ -5,9 +5,9 @@ export class CombinerState<T extends Array<any>, X extends Array<any>> extends S
 
     constructor(states: State<any, any>[]) {
         // input
-        const input = Observable.combineLatest(
+        const input: Observable<T|X> = Observable.combineLatest(
                 states.map(o => o.changes$()),
-                (...args: any[]) => args);
+                (...args: any[]) => args) as Observable<T|X>;
 
         // isNonValue
         const isNonValue = (x: T|X): x is X => {

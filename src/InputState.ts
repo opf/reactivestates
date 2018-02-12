@@ -1,4 +1,5 @@
 import {Observable, Subject} from "rxjs";
+import {take} from "rxjs/operators";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 
 export class InputState<T> extends State<T, undefined> {
@@ -79,10 +80,10 @@ export class InputState<T> extends State<T, undefined> {
 
     doModify(valueMapper: (val: T) => T | Observable<T>, or?: () => T | Observable<T>): this {
         if (this.hasValue()) {
-            this.values$().take(1).subscribe(oldVal => {
+            this.values$().pipe(take(1)).subscribe(oldVal => {
                 let newInput = valueMapper(oldVal);
                 if (newInput instanceof Observable) {
-                    newInput.take(1).subscribe(newVal => {
+                    newInput.pipe(take(1)).subscribe(newVal => {
                         this.putValue(newVal);
                     });
                 } else {
@@ -92,7 +93,7 @@ export class InputState<T> extends State<T, undefined> {
         } else {
             let orInput = or!();
             if (orInput instanceof Observable) {
-                orInput.take(1).subscribe(newVal => {
+                orInput.pipe(take(1)).subscribe(newVal => {
                     this.putValue(newVal);
                 });
             } else {

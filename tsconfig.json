@@ -11,6 +11,7 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
+    "skipLibCheck": true,
     "noImplicitReturns": true,
     "rootDir": "src",
     "target": "es5",
