@@ -1,4 +1,9 @@
 
+**Version 1.0.2**
+
+- do not log state value
+
+
 **Version 1.0.1**
 
 - removed all imports from `rxjs`
