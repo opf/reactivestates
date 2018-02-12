@@ -1,4 +1,5 @@
-import {Subject} from "rxjs";
+import {skip} from "rxjs/operators";
+import {Subject} from "rxjs/Subject";
 import {observableToState, State} from "./State";
 
 describe("State", function () {
@@ -23,20 +24,20 @@ describe("State", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         s1.changes$()
-                .subscribe(i => {
-                    assert.equal(i, undefined);
-                    done();
-                });
+            .subscribe(i => {
+                assert.equal(i, undefined);
+                done();
+            });
     });
 
     it("nonValues$ has 'undefined' state after creation", function (done) {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
         s1.nonValues$()
-                .subscribe(i => {
-                    assert.equal(i, undefined);
-                    done();
-                });
+            .subscribe(i => {
+                assert.equal(i, undefined);
+                done();
+            });
     });
 
     it("replays the last value", function (done) {
@@ -44,11 +45,11 @@ describe("State", function () {
         const s1 = observableToState(dummy);
         dummy.next(1);
         s1.values$()
-                .subscribe(i => {
-                    assert.isTrue(s1.hasValue());
-                    assert.equal(i, 1);
-                    done();
-                });
+            .subscribe(i => {
+                assert.isTrue(s1.hasValue());
+                assert.equal(i, 1);
+                done();
+            });
     });
 
     it("mapOr", () => {
@@ -87,13 +88,13 @@ describe("State", function () {
         const dummy = new Subject<number>();
         const s1 = observableToState(dummy);
 
-        s1.nonValues$()
-                .skip(1)
-                .subscribe(i => {
-                    assert.equal(i, undefined);
-                    assert.isFalse(s1.hasValue());
-                    done();
-                });
+        s1.nonValues$().pipe(
+            skip(1))
+            .subscribe(i => {
+                assert.equal(i, undefined);
+                assert.isFalse(s1.hasValue());
+                done();
+            });
 
         dummy.next(1);
         dummy.next(undefined);
@@ -109,11 +110,11 @@ describe("State", function () {
         dummy.next(2);
         assert.isTrue(s1.hasValue());
         s1.values$()
-                .subscribe(i => {
-                    assert.isTrue(s1.hasValue());
-                    assert.equal(i, 2);
-                    done();
-                });
+            .subscribe(i => {
+                assert.isTrue(s1.hasValue());
+                assert.equal(i, 2);
+                done();
+            });
     });
 
     it("remembers the timestamp of the last value", function (done) {

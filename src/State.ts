@@ -1,7 +1,9 @@
-import {Observable, ReplaySubject, Subscription} from "rxjs";
+import {Observable} from "rxjs/Observable";
 import {Observer} from "rxjs/Observer";
 import {filter, take} from "rxjs/operators";
+import {ReplaySubject} from "rxjs/ReplaySubject";
 import {Subject} from "rxjs/Subject";
+import {Subscription} from "rxjs/Subscription";
 import {logStateChange} from "./log";
 
 export type IsNonValueFn<T, X> = (x: T | X) => x is X;

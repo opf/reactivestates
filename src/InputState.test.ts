@@ -1,6 +1,9 @@
+import {Observable} from "rxjs/Observable";
 import {take} from "rxjs/operators";
 import {input} from "./InputState";
-import {Observable} from "rxjs";
+// import {of} from "rxjs/observable/of";
+import "rxjs/add/observable/timer";
+import "rxjs/add/observable/of";
 
 describe("InputState", function () {
 

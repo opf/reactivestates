@@ -1,16 +1,17 @@
-import {Observable} from "rxjs";
+import {Observable} from "rxjs/Observable";
+import {combineLatest} from "rxjs/observable/combineLatest";
 import {State} from "./State";
 
 export class CombinerState<T extends Array<any>, X extends Array<any>> extends State<T, X> {
 
     constructor(states: State<any, any>[]) {
         // input
-        const input: Observable<T|X> = Observable.combineLatest(
-                states.map(o => o.changes$()),
-                (...args: any[]) => args) as Observable<T|X>;
+        const input: Observable<T | X> = combineLatest(
+            states.map(o => o.changes$()),
+            (...args: any[]) => args) as Observable<T | X>;
 
         // isNonValue
-        const isNonValue = (x: T|X): x is X => {
+        const isNonValue = (x: T | X): x is X => {
             if (x === undefined) {
                 return true;
             }
@@ -27,8 +28,10 @@ export class CombinerState<T extends Array<any>, X extends Array<any>> extends S
             return false;
         };
 
-        const afterConnect = () => {};
-        const afterDisConnect = () => {};
+        const afterConnect = () => {
+        };
+        const afterDisConnect = () => {
+        };
 
         super(input, isNonValue, afterConnect, afterDisConnect);
     }

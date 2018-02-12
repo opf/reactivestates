@@ -1,4 +1,9 @@
 
+**Version 1.0.1**
+
+- removed all imports from `rxjs`
+
+
 **Version 1.0.0**
 
 - Requires RxJS 5.5.6

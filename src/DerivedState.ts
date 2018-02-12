@@ -1,4 +1,5 @@
-import {Observable} from "rxjs";
+import {Observable} from "rxjs/Observable";
+import {merge} from "rxjs/observable/merge";
 import {filter, map} from "rxjs/operators";
 import {AfterConnectFn, AfterDisConnectFn, IsNonValueFn, State} from "./State";
 
@@ -79,7 +80,7 @@ export function derive<IT, OT, IX = undefined>(state: State<IT, IX>,
         filter(v => state.isNonValue(v)),
         map(_ => undefined));
 
-    const source$: Observable<OT | undefined> = Observable.merge(nonValues$, values$);
+    const source$: Observable<OT | undefined> = merge(nonValues$, values$);
     const isNonValue = (val: OT | undefined): val is undefined => {
         return val === undefined;
     };

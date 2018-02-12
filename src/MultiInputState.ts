@@ -1,9 +1,9 @@
-import {Observable, Subject} from "rxjs";
+import {Observable} from "rxjs/Observable";
 import {filter, takeUntil} from "rxjs/operators";
 import {ReplaySubject} from "rxjs/ReplaySubject";
+import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
-import {BehaviorSubject} from "rxjs/BehaviorSubject";
 
 export type Cache<T> = { [key: string]: InputState<T> };
 
