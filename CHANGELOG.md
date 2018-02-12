@@ -1,4 +1,9 @@
 
+**Version 1.0.3**
+
+- bug fix
+
+
 **Version 1.0.2**
 
 - do not log state value

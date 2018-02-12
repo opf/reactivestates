@@ -28,7 +28,7 @@ export function defaultLogger(state: State<any, any>, msg?: string) {
         logTimePeriodDivider();
         let value = state.value;
         if (value !== undefined) {
-            value = value.toString();
+            value = !_.isNil(value) ? value.toString() : value;
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleGreenOnWhite, value);
         } else {
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleRedOnWhite, value);
