@@ -1,5 +1,4 @@
-import {Observable} from "rxjs/Observable";
-import {merge} from "rxjs/observable/merge";
+import {merge, Observable} from "rxjs";
 import {filter, map} from "rxjs/operators";
 import {AfterConnectFn, AfterDisConnectFn, IsNonValueFn, State} from "./State";
 
@@ -73,14 +72,15 @@ export function derive<IT, OT, IX = undefined>(state: State<IT, IX>,
                                                defaultWhenInputHasNonValue?: OT): DerivedState<IT, IX, OT, undefined> {
 
     let valueStream$: Observable<IT> = state.outputStreamTrailing.pipe(
-        filter(v => !state.isNonValue(v))) as Observable<IT>;
+            filter(v => !state.isNonValue(v))) as Observable<IT>;
 
     const values$: Observable<OT> = transformer(valueStream$, state) as Observable<OT>;
     const nonValues$: Observable<undefined> = state.outputStreamTrailing.pipe(
-        filter(v => state.isNonValue(v)),
-        map(_ => undefined));
+            filter(v => state.isNonValue(v)),
+            map(_ => undefined));
 
-    const source$: Observable<OT | undefined> = merge(nonValues$, values$);
+    const source$: Observable<OT | undefined> = merge(values$, nonValues$) as any;
+
     const isNonValue = (val: OT | undefined): val is undefined => {
         return val === undefined;
     };

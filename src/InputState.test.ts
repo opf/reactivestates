@@ -1,9 +1,7 @@
-import {Observable} from "rxjs/Observable";
+import {of, timer} from "rxjs";
 import {take} from "rxjs/operators";
 import {input} from "./InputState";
-// import {of} from "rxjs/observable/of";
-import "rxjs/add/observable/timer";
-import "rxjs/add/observable/of";
+
 
 describe("InputState", function () {
 
@@ -67,7 +65,7 @@ describe("InputState", function () {
 
     it("can modify the state from Observable", function (done) {
         const s1 = input(5);
-        s1.doModify(val => Observable.of(val + 1));
+        s1.doModify(val => of(val + 1));
         s1.values$().subscribe(val => {
             assert.equal(val, 6);
             done();
@@ -97,7 +95,7 @@ describe("InputState", function () {
 
     it("putFromPromise", function (done) {
         const s1 = input(0);
-        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
+        s1.clearAndPutFromPromise(timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.hasValue());
         s1.values$().subscribe(val => {
             assert.equal(val, 0);
@@ -108,7 +106,7 @@ describe("InputState", function () {
 
     it("hasActivePromiseRequest", function (done) {
         const s1 = input(0);
-        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
+        s1.clearAndPutFromPromise(timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.hasValue());
         assert.isTrue(s1.hasActivePromiseRequest());
 
@@ -123,7 +121,7 @@ describe("InputState", function () {
     it("isPristine", function () {
         const s1 = input<number>();
         assert.isTrue(s1.isPristine());
-        s1.clearAndPutFromPromise(Observable.timer(0).pipe(take(1)).toPromise());
+        s1.clearAndPutFromPromise(timer(0).pipe(take(1)).toPromise());
         assert.isFalse(s1.isPristine());
         assert.isFalse(s1.hasValue());
     });
@@ -131,7 +129,7 @@ describe("InputState", function () {
     it("putFromPromiseIfPristine", function (done) {
         const s1 = input<number>();
 
-        s1.putFromPromiseIfPristine(() => Observable.timer(0).pipe(take(1)).toPromise());
+        s1.putFromPromiseIfPristine(() => timer(0).pipe(take(1)).toPromise());
         assert.isTrue(s1.hasActivePromiseRequest());
         assert.isFalse(s1.hasValue());
 

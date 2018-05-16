@@ -1,7 +1,7 @@
-import {Observable} from "rxjs/Observable";
+import {Observable} from "rxjs";
 import {filter, takeUntil} from "rxjs/operators";
-import {ReplaySubject} from "rxjs/ReplaySubject";
-import {Subject} from "rxjs/Subject";
+import {ReplaySubject} from "rxjs";
+import {Subject} from "rxjs";
 import {input, InputState} from "./InputState";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 

@@ -1,6 +1,6 @@
-import {Observable} from "rxjs/Observable";
+import {Observable} from "rxjs";
 import {take} from "rxjs/operators";
-import {Subject} from "rxjs/Subject";
+import {Subject} from "rxjs";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 
 export class InputState<T> extends State<T, undefined> {

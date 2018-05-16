@@ -1,6 +1,5 @@
-import * as _ from "lodash";
 import {enableReactiveStatesLogging} from "./log";
-import {enableDevelopmentMode, enableMemoryLeakDetection, Store} from "./Store";
+import {enableDevelopmentMode, Store} from "./Store";
 
 describe("Store - select", function () {
 
@@ -27,6 +26,7 @@ describe("Store - select", function () {
                 });
             }
         }
+
         const store = new S({field1: 0});
         const calls: any[] = [];
         store.select("field1", "field2")
@@ -44,6 +44,7 @@ describe("Store - select", function () {
     it("select() emits values initially", function (done) {
         class S extends Store<{ field1: number[] }> {
         }
+
         const store = new S({field1: []});
         store.select("field1")
                 .subscribe(() => done());
@@ -57,6 +58,7 @@ describe("Store - select", function () {
                 });
             }
         }
+
         const calls: any[] = [];
         const store = new S({field1: 0});
         store.select("field1")
@@ -73,6 +75,7 @@ describe("Store - select", function () {
                 });
             }
         }
+
         const calls: any[] = [];
         const store = new S({field1: 0, field2: 5});
         store.select("field2")
@@ -89,6 +92,7 @@ describe("Store - select", function () {
                 });
             }
         }
+
         const calls: any[] = [];
         const store = new S({field1: null});
         store.select("field1")
@@ -100,6 +104,7 @@ describe("Store - select", function () {
     it("selectNonNil() emits a value if all selected fields are already nonNil", function (done) {
         class S extends Store<{ field1: number }> {
         }
+
         const store = new S({field1: 0});
         store.selectNonNil("field1")
                 .subscribe(s => done());
@@ -113,29 +118,11 @@ describe("Store - select", function () {
                 });
             }
         }
+
         const store = new S({field1: null});
         store.selectNonNil("field1")
                 .subscribe(s => done());
         store.action1();
-    });
-
-    it("detect memory leak subscriptions", function (done) {
-        enableMemoryLeakDetection();
-
-        console.log = (...msg: any[]) => {
-            assert.include(msg.join(""), "leak");
-            done();
-        };
-
-        class S extends Store<{ field1: number }> {
-        }
-        const store = new S({field1: 1});
-
-        function subscribe() {
-            store.selectNonNil("field1").subscribe();
-        }
-
-        _.times(2, () => subscribe());
     });
 
 });

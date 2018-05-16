@@ -1,4 +1,9 @@
 
+**Version 2.0.0**
+
+- RxJS 6
+
+
 **Version 1.0.3**
 
 - bug fix

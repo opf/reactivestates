@@ -1,17 +1,13 @@
 import * as _ from "lodash";
-import {Observable} from "rxjs/Observable";
+import {Observable, Subject} from "rxjs";
 import {bufferWhen, filter, map, startWith} from "rxjs/operators";
-import {Subject} from "rxjs/Subject";
 import {input, InputState} from "./InputState";
 import {enableReactiveStatesLogging} from "./log";
-import {wrapObservableWithMemoryLeakDetection} from "./ObservableWithMemoryLeakDetection";
 import {LogEvent, logInvalidDataChange, logStoreEvent} from "./StoreLog";
 
 declare const Proxy: any;
 
 let developmentMode = false;
-
-let memoryLeakDetection = false;
 
 // let invalidDataModificationComparator: <T>(v1: T, v2: T) => boolean =
 //     (v1: any, v2: any) => _.isEqual(v1, v2);
@@ -43,10 +39,6 @@ export class SelectEvent<T> {
 export function enableDevelopmentMode(enable: boolean = true) {
     developmentMode = enable;
     enableReactiveStatesLogging(enable);
-}
-
-export function enableMemoryLeakDetection(enable: boolean = true) {
-    memoryLeakDetection = true;
 }
 
 function createInputState(name: string) {
@@ -100,12 +92,12 @@ export abstract class Store<T> {
     private actionStackCompletedTrigger = new Subject<any>();
 
     private actionCompletedBuffered: Observable<Set<keyof T>> = this.actionCompleted.pipe(
-        bufferWhen(() => this.actionStackCompletedTrigger),
-        map(sets => {
-            const all = new Set<any>();
-            sets.forEach(s => s.forEach(k => all.add(k)));
-            return all;
-        }));
+            bufferWhen(() => this.actionStackCompletedTrigger),
+            map(sets => {
+                const all = new Set<any>();
+                sets.forEach(s => s.forEach(k => all.add(k)));
+                return all;
+            }));
 
     /**
      * @param data
@@ -139,22 +131,18 @@ export abstract class Store<T> {
 
     select<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
         const selected = this.actionCompletedBuffered.pipe(
-            filter(changedFields => {
-                return fields.length === 0 || _.some(fields, f => changedFields.has(f));
-            }),
-            startWith(new Set(fields)),
-            map(fields => new SelectEvent(this.state, new Set(fields))));
+                filter(changedFields => {
+                    return fields.length === 0 || _.some(fields, f => changedFields.has(f));
+                }),
+                startWith(new Set(fields)),
+                map(fields => new SelectEvent(this.state, new Set(fields))));
 
-        if (memoryLeakDetection) {
-            return wrapObservableWithMemoryLeakDetection(selected);
-        } else {
-            return selected;
-        }
+        return selected;
     }
 
     selectNonNil<K extends keyof T>(...fields: K[]): Observable<SelectEvent<T>> {
         return this.select(...fields).pipe(
-            filter(s => s.allSelectedFieldsNonNil()));
+                filter(s => s.allSelectedFieldsNonNil()));
     }
 
     stateField<M extends keyof T>(name: M): InputState<T[M]> {

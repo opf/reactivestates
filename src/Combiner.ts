@@ -1,5 +1,5 @@
-import {Observable} from "rxjs/Observable";
-import {combineLatest} from "rxjs/observable/combineLatest";
+import {Observable} from "rxjs";
+import {combineLatest} from "rxjs";
 import {State} from "./State";
 
 export class CombinerState<T extends Array<any>, X extends Array<any>> extends State<T, X> {

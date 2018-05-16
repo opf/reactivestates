@@ -1,5 +1,5 @@
-import {BehaviorSubject} from "rxjs/BehaviorSubject";
-import {Subject} from "rxjs/Subject";
+import {BehaviorSubject} from "rxjs";
+import {Subject} from "rxjs";
 import {combine, CombinerState} from "./Combiner";
 import {observableToState} from "./State";
 
