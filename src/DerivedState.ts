@@ -6,7 +6,7 @@ export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
 
     private readonly inputState: State<IT, IX>;
 
-    private readonly defaultWhenInputHasNonValue?: OT | OX;
+    private readonly defaultWhenInputHasNonValue: OT | OX;
 
     constructor(inputState: State<IT, IX>,
                 stream: Observable<OT | OX>,

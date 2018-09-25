@@ -1,3 +1,4 @@
+import {assert} from "chai";
 import {filter} from "rxjs/operators";
 import {multiInput} from "./MultiInputState";
 

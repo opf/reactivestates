@@ -1,7 +1,5 @@
-import {Observable} from "rxjs";
+import {Observable, ReplaySubject, Subject} from "rxjs";
 import {filter, takeUntil} from "rxjs/operators";
-import {ReplaySubject} from "rxjs";
-import {Subject} from "rxjs";
 import {input, InputState} from "./InputState";
 import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 
@@ -30,10 +28,10 @@ export class MultiInputState<T> extends State<Cache<T>, undefined> {
         };
 
         super(
-                cache$.asObservable(),
-                (val: any): val is undefined => val === undefined,
-                afterConnect,
-                afterDisConnect);
+            cache$.asObservable(),
+            (val: any): val is undefined => val === undefined,
+            afterConnect,
+            afterDisConnect);
 
         this.cache$ = cache$;
         this.change$ = new Subject();
@@ -42,8 +40,10 @@ export class MultiInputState<T> extends State<Cache<T>, undefined> {
 
     clear(): this {
         for (let id in this.value!) {
-            const state = this.value![id];
-            state.disconnect();
+            if (this.value!.hasOwnProperty(id)) {
+                const state = this.value![id];
+                state.disconnect();
+            }
         }
 
         this.cache$.next({});
@@ -59,10 +59,10 @@ export class MultiInputState<T> extends State<Cache<T>, undefined> {
             }
             this.value![id] = newState;
             newState.changes$().pipe(
-                    takeUntil(this.observeRemove().pipe(filter(val => val === id))))
-                    .subscribe(val => {
-                        this.change$.next([id, val, newState]);
-                    });
+                takeUntil(this.observeRemove().pipe(filter(val => val === id))))
+                .subscribe(val => {
+                    this.change$.next([id, val, newState]);
+                });
             this.cache$.next(this.value!);
         }
 

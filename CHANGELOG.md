@@ -1,4 +1,10 @@
 
+**Version 2.0.1**
+
+- added ES2015 modules for better tree-shaking 
+- removed lodash dependency 
+
+
 **Version 2.0.0**
 
 - RxJS 6

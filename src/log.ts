@@ -1,9 +1,9 @@
-import * as _ from "lodash";
 import {State} from "./State";
+import {isNil} from "./utils";
 
-export const cssStyleBlackOnLightblue = ["background: #e1edff", "color: black"].join(";");
-export const cssStyleGreyOnWhite = ["background: white", "color: #5b5b5b"].join(";");
-export const cssStyleBlueOnWhite = ["background: white", "color: #0003d5"].join(";");
+// export const cssStyleBlackOnLightblue = ["background: #e1edff", "color: black"].join(";");
+// export const cssStyleGreyOnWhite = ["background: white", "color: #5b5b5b"].join(";");
+// export const cssStyleBlueOnWhite = ["background: white", "color: #0003d5"].join(";");
 export const cssStyleGreenOnWhite = ["background: white", "color: #00830f"].join(";");
 export const cssStyleRedOnWhite = ["background: white", "color: #9d0002"].join(";");
 
@@ -15,20 +15,20 @@ let lastLogMessage: number | undefined = undefined;
 export function logTimePeriodDivider() {
     if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1500) {
         const dur = Math.round((Date.now() - lastLogMessage) / 1000);
-        console.log("[RS] " + _.repeat("-", 100) + " " + dur + "s");
+        console.log("[RS] ------------------------------------------- " + dur + "s");
     }
     lastLogMessage = Date.now();
 }
 
 export function defaultLogger(state: State<any, any>, msg?: string) {
-    const isBrowser: boolean = _.hasIn(console, "group");
+    const isBrowser: boolean = console["group"] !== undefined;
     if (!isBrowser) {
         console.log(`[RS] ${state.name} {o=${state.getSubscriberCount()}} = ${state.value}`);
     } else {
         logTimePeriodDivider();
         let value = state.value;
         if (value !== undefined) {
-            value = !_.isNil(value) ? value.toString() : value;
+            value = !isNil(value) ? value.toString() : value;
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleGreenOnWhite, value);
         } else {
             console.log(`%c[RS] ${state.name} {o=${state.getSubscriberCount()}} %o`, cssStyleRedOnWhite, value);
@@ -43,7 +43,7 @@ export function setLogger(loggerFn: typeof defaultLogger) {
 }
 
 export function logStateChange(state: State<any, any>, msg?: string) {
-    if (isLogEnabled() && !_.isNil(state.name)) {
+    if (isLogEnabled() && !isNil(state.name)) {
         logger(state, msg);
     }
 }

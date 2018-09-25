@@ -12,3 +12,7 @@ export function IfThen<IT, IX, OT, OX>(input: State<IT, IX>, switchLogic: (val: 
     const both: CombinerState<[IT, OT], [undefined, OX]> = combine(ifState, then);
     return derive<[IT, OT], OT, any>(both, $ => $.pipe(map(([, out]) => out)));
 }
+
+export function isNil(value: any): value is null|undefined {
+    return value === null || value === undefined;
+}

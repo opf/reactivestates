@@ -1,3 +1,4 @@
+import {assert} from "chai";
 import {filter, map} from "rxjs/operators";
 import {derive, deriveRaw} from "./DerivedState";
 import {input} from "./InputState";
@@ -11,15 +12,15 @@ describe("DerivedState", function () {
         input$.logEnabled = true;
 
         const derived = deriveRaw(
-                input$,
-                ($, input) => $.pipe(
-                        map(v => {
-                            if (input.isNonValue(v)) {
-                                return -1;
-                            } else {
-                                return v + 1000;
-                            }
-                        })));
+            input$,
+            ($, input) => $.pipe(
+                map(v => {
+                    if (input.isNonValue(v)) {
+                        return -1;
+                    } else {
+                        return v + 1000;
+                    }
+                })));
 
         input$.changes$().subscribe(val => {
             calls.push("input:" + JSON.stringify(val));

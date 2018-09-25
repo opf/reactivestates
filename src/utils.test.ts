@@ -1,3 +1,4 @@
+import {assert} from "chai";
 import {input} from "./InputState";
 import {State} from "./State";
 import {IfThen} from "./utils";

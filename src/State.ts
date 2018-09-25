@@ -20,7 +20,7 @@ export class State<T, X = undefined> {
 
     public outputStreamTrailing: Subject<T | X> = new ReplaySubject<T | X>(1);
 
-    protected stateValue: T | X;
+    protected stateValue!: T | X;
 
     private inputStream: Observable<T | X>;
 
