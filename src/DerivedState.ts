@@ -1,6 +1,6 @@
+import {AfterConnectFn, AfterDisConnectFn, IsNonValueFn, State} from "./State";
 import {merge, Observable} from "rxjs";
 import {filter, map} from "rxjs/operators";
-import {AfterConnectFn, AfterDisConnectFn, IsNonValueFn, State} from "./State";
 
 export class DerivedState<IT, IX, OT, OX> extends State<OT, OX> {
 

@@ -79,7 +79,7 @@ describe("State", function () {
     });
 
     it("the value 'undefined' clears the state", function () {
-        const dummy = new Subject<number>();
+        const dummy = new Subject<number|undefined>();
         const s1 = observableToState(dummy);
         dummy.next(1);
         dummy.next(undefined);
@@ -87,7 +87,7 @@ describe("State", function () {
     });
 
     it("clearing can be observed", function (done) {
-        const dummy = new Subject<number>();
+        const dummy = new Subject<number|undefined>();
         const s1 = observableToState(dummy);
 
         s1.nonValues$().pipe(
@@ -103,7 +103,7 @@ describe("State", function () {
     });
 
     it("can be disconnected/connected", function (done) {
-        const dummy = new Subject<number>();
+        const dummy = new Subject<number|undefined>();
         const s1 = observableToState(dummy);
         s1.disconnect();
         dummy.next(1);
@@ -152,7 +152,7 @@ describe("State", function () {
     });
 
     it("value / nonValue states over time", function () {
-        const value = new Subject<number>();
+        const value = new Subject<number|undefined>();
         const s1 = observableToState(value);
 
         let calls: string[] = [];

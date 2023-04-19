@@ -5,7 +5,7 @@ import {AfterConnectFn, AfterDisConnectFn, State} from "./State";
 
 export class InputState<T> extends State<T, undefined> {
 
-    private state: Subject<T>;
+    private state: Subject<T|undefined>;
 
     private timestampOfLastPromise: number;
 
@@ -22,7 +22,7 @@ export class InputState<T> extends State<T, undefined> {
             }
         };
 
-        const state = new Subject<T>();
+        const state = new Subject<T|undefined>();
         super(state, isNonValue, afterConnect, afterDisConnect);
 
         this.state = state;

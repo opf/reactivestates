@@ -1,10 +1,6 @@
-import {Observable} from "rxjs";
-import {Observer} from "rxjs";
-import {filter, take} from "rxjs/operators";
-import {ReplaySubject} from "rxjs";
-import {Subject} from "rxjs";
-import {Subscription} from "rxjs";
-import {logStateChange} from "./log";
+import { firstValueFrom, Observable, Observer, ReplaySubject, Subject, Subscription } from "rxjs";
+import { filter } from "rxjs/operators";
+import { logStateChange } from "./log";
 
 export type IsNonValueFn<T, X> = (x: T | X) => x is X;
 export type AfterConnectFn<T, X> = (state: State<T, X>, setStateFn: (val: T | X) => void) => void;
@@ -92,7 +88,7 @@ export class State<T, X = undefined> {
     }
 
     public changesPromise(): PromiseLike<T | X> {
-        return this.changes$().pipe(take(1)).toPromise();
+        return firstValueFrom(this.changes$());
     }
 
     public values$(reason?: string): Observable<T> {
@@ -100,7 +96,7 @@ export class State<T, X = undefined> {
     }
 
     public valuesPromise(): PromiseLike<T | undefined> {
-        return this.values$().pipe(take(1)).toPromise();
+        return firstValueFrom(this.values$());
     }
 
     public nonValues$(reason?: string): Observable<X> {
@@ -108,7 +104,7 @@ export class State<T, X = undefined> {
     }
 
     public nonValuesPromise(): PromiseLike<T | X> {
-        return this.nonValues$().pipe(take(1)).toPromise();
+        return firstValueFrom(this.nonValues$());
     }
 
     public get value(): T | X {

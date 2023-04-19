@@ -1,4 +1,3 @@
-import {State} from "./State";
 import {isNil} from "./utils";
 
 // export const cssStyleBlackOnLightblue = ["background: #e1edff", "color: black"].join(";");
@@ -12,6 +11,12 @@ let logEnabled = false;
 
 let lastLogMessage: number | undefined = undefined;
 
+export interface StateLike {
+    name:string|null;
+    value:unknown;
+    getSubscriberCount:() => number;
+}
+
 export function logTimePeriodDivider() {
     if (lastLogMessage !== undefined && (Date.now() - lastLogMessage) > 1500) {
         const dur = Math.round((Date.now() - lastLogMessage) / 1000);
@@ -20,7 +25,7 @@ export function logTimePeriodDivider() {
     lastLogMessage = Date.now();
 }
 
-export function defaultLogger(state: State<any, any>, msg?: string) {
+export function defaultLogger(state: StateLike, msg?: string) {
     const isBrowser: boolean = console["group"] !== undefined;
     if (!isBrowser) {
         console.log(`[RS] ${state.name} {o=${state.getSubscriberCount()}} = ${state.value}`);
@@ -42,7 +47,7 @@ export function setLogger(loggerFn: typeof defaultLogger) {
     logger = loggerFn;
 }
 
-export function logStateChange(state: State<any, any>, msg?: string) {
+export function logStateChange(state: StateLike, msg?: string) {
     if (isLogEnabled() && !isNil(state.name)) {
         logger(state, msg);
     }
